@@ -329,6 +329,7 @@ textarea.field-control{resize:vertical;min-height:72px;}
 <div id="app" hidden>
   <div class="topbar">
     <div class="topbar-logo"><span class="topbar-logo-dot"></span> NAV Sistema <span style="font-size:10px;font-weight:400;opacity:.55;margin-left:4px;">v16</span></div>
+    <div id="testBanner" hidden style="background:#c64600;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:.5px;">⚠️ MODO PRUEBA — datos aislados</div>
     <span class="topbar-esp" id="topbarEsp">Dermatología</span>
     <span class="topbar-badge" id="topbarBadge">Firebase</span>
     <span class="topbar-sep"></span>
@@ -943,8 +944,9 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 
 // Colecciones Firestore
-const COL_CASOS     = 'casos';
-const COL_GESTIONES = 'gestiones';
+const _MODO_TEST = new URLSearchParams(location.search).get('test') === '1';
+const COL_CASOS     = _MODO_TEST ? 'casos_TEST'     : 'casos';
+const COL_GESTIONES = _MODO_TEST ? 'gestiones_TEST' : 'gestiones';
 
 // ── Caché local (evita re-leer Firestore en cada render) ─────────
 let _casosCached     = null;
@@ -1279,6 +1281,7 @@ function showApp(user) {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').hidden = false;
   document.getElementById('topbarUser').textContent = user;
+  if (_MODO_TEST) document.getElementById('testBanner').hidden = false;
   renderBandeja();
 }
 
@@ -1333,7 +1336,8 @@ function toggleFilter(estado, btn) {
 
 // ══ DRAWER ════════════════════════════════════════════════════════
 async function openDrawer(casoId) {
-  const casos = await getCasos();
+  // Usar caché directamente para no bloquear — getCasos solo si caché vacío
+  const casos = _casosCached || await getCasos();
   currentCaso = casoId ? casos.find(c => c.id === casoId) : null;
   perfilModificado = false;
 
