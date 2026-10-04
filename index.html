@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NAV Sistema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<!-- Firebase SDK v10 (compat mode — UMD) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-auth-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-firestore-compat.min.js"></script>
+<style>
+:root {
+  --bg:#f6f7f9; --surface:#fff; --surface2:#f0f2f5; --border:#e1e4e8;
+  --text:#1a1d23; --text2:#5a6070; --text3:#8990a0;
+  --accent:#1a5fb4; --accent-light:#e8f0fc; --accent-hover:#154d9a;
+  --red:#c01c28; --red-bg:#fff0ee;
+  --orange:#c64600; --orange-bg:#fff5e8;
+  --yellow:#9a6f00; --yellow-bg:#fffbe6;
+  --green:#1c7a2c; --green-bg:#edfaea;
+  --purple:#7b4fa0; --purple-bg:#f4eefa;
+  --teal:#1a7a6e; --teal-bg:#e6f7f5;
+  --radius:8px; --radius-sm:5px;
+  --shadow:0 1px 4px rgba(0,0,0,.08),0 2px 12px rgba(0,0,0,.04);
+  --shadow-lg:0 4px 24px rgba(0,0,0,.12);
+  color-scheme:light;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1117;--surface:#1a1f2b;--surface2:#242938;--border:#2e3545;
+    --text:#e8eaf0;--text2:#9aa0b0;--text3:#5a6070;
+    --accent:#4d8ef5;--accent-light:#1a2a4a;--accent-hover:#6aa0ff;
+    --red:#ff6b6b;--red-bg:#2a1515;--orange:#ffaa44;--orange-bg:#2a1e0e;
+    --yellow:#ffd24d;--yellow-bg:#1e1a00;--green:#66cc77;--green-bg:#0e1f12;
+    --purple:#c97fef;--purple-bg:#1e1028;--teal:#4ecdc4;--teal-bg:#0e1e1c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1117;--surface:#1a1f2b;--surface2:#242938;--border:#2e3545;
+  --text:#e8eaf0;--text2:#9aa0b0;--text3:#5a6070;
+  --accent:#4d8ef5;--accent-light:#1a2a4a;--accent-hover:#6aa0ff;
+  --red:#ff6b6b;--red-bg:#2a1515;--orange:#ffaa44;--orange-bg:#2a1e0e;
+  --yellow:#ffd24d;--yellow-bg:#1e1a00;--green:#66cc77;--green-bg:#0e1f12;
+  --purple:#c97fef;--purple-bg:#1e1028;--teal:#4ecdc4;--teal-bg:#0e1e1c;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--text);line-height:1.5;}
+button{cursor:pointer;font-family:inherit;}
+select,input,textarea{font-family:inherit;font-size:14px;}
+
+/* TOPBAR */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:100;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px;height:52px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.topbar-logo{font-weight:700;font-size:15px;color:var(--accent);letter-spacing:-.3px;display:flex;align-items:center;gap:8px;}
+.topbar-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.topbar-esp{font-size:12px;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:4px;}
+.topbar-sep{flex:1;}
+.topbar-user{font-size:13px;color:var(--text2);}
+.topbar-badge{font-size:10px;font-weight:700;background:var(--teal-bg);color:var(--teal);padding:2px 7px;border-radius:10px;letter-spacing:.3px;}
+.topbar-theme{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;color:var(--text2);font-size:12px;}
+.topbar-logout{background:none;border:none;color:var(--text3);font-size:12px;padding:4px 8px;}
+.topbar-logout:hover{color:var(--red);}
+
+/* LAYOUT */
+.main{display:flex;min-height:calc(100vh - 52px);}
+.sidebar{width:200px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;display:flex;flex-direction:column;gap:4px;}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 16px;color:var(--text2);font-size:13px;font-weight:500;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all .1s;}
+.sidebar-item:hover{background:var(--surface2);color:var(--text);}
+.sidebar-item.active{background:var(--accent-light);color:var(--accent);border-left-color:var(--accent);}
+.content{flex:1;padding:24px;min-width:0;}
+
+/* CONTENT HEADER */
+.content-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.content-title{font-size:18px;font-weight:700;}
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:13px;font-weight:600;margin-left:auto;transition:background .15s;}
+.btn-primary:hover{background:var(--accent-hover);}
+
+/* FILTROS */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.filter-btn{padding:5px 12px;font-size:12px;font-weight:600;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text2);transition:all .15s;}
+.filter-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.filter-btn.fv.active{border-color:var(--red);color:var(--red);background:var(--red-bg);}
+.filter-btn.fh.active{border-color:var(--orange);color:var(--orange);background:var(--orange-bg);}
+.filter-btn.fp.active{border-color:var(--yellow);color:var(--yellow);background:var(--yellow-bg);}
+.filter-btn.fg.active{border-color:var(--green);color:var(--green);background:var(--green-bg);}
+
+/* CASO CARD */
+.casos-list{display:flex;flex-direction:column;gap:8px;}
+.caso-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.caso-card:hover{border-color:var(--accent);box-shadow:var(--shadow-lg);}
+.caso-badge{flex-shrink:0;width:90px;text-align:center;font-size:10px;font-weight:700;padding:3px 6px;border-radius:4px;letter-spacing:.4px;text-transform:uppercase;}
+.badge-vencido{background:var(--red-bg);color:var(--red);}
+.badge-hoy{background:var(--orange-bg);color:var(--orange);}
+.badge-pendiente{background:var(--yellow-bg);color:var(--yellow);}
+.badge-programado{background:var(--green-bg);color:var(--green);}
+.caso-info{flex:1;min-width:0;}
+.caso-id{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;}
+.caso-nombre{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.caso-esp{font-size:12px;color:var(--text2);margin-top:1px;}
+.caso-fecha{flex-shrink:0;font-size:12px;color:var(--text3);text-align:right;font-variant-numeric:tabular-nums;}
+.caso-action{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0;transition:all .15s;}
+.caso-action:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* DRAWER */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;}
+.drawer-overlay.open{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(580px,100vw);background:var(--surface);box-shadow:var(--shadow-lg);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);}
+.drawer.open{transform:translateX(0);}
+.drawer-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;}
+.drawer-header-info{flex:1;}
+.drawer-title{font-size:16px;font-weight:700;}
+.drawer-subtitle{font-size:12px;color:var(--text2);margin-top:2px;}
+.drawer-close{background:none;border:none;font-size:20px;color:var(--text3);line-height:1;padding:2px;transition:color .1s;}
+.drawer-close:hover{color:var(--red);}
+.drawer-body{flex:1;overflow-y:auto;padding:0;}
+.drawer-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;background:var(--surface);}
+.btn-cancel{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 16px;font-size:13px;color:var(--text2);}
+.btn-cancel:hover{background:var(--surface2);}
+.btn-save{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 20px;font-size:13px;font-weight:600;transition:background .15s;}
+.btn-save:hover{background:var(--accent-hover);}
+
+/* SECCIONES */
+.section{padding:16px 20px;border-bottom:1px solid var(--border);}
+.section:last-child{border-bottom:none;}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.section-title span{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+/* PERFIL EXPANDIBLE */
+.perfil-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.perfil-header-left{display:flex;align-items:center;gap:8px;}
+.perfil-badge{font-size:10px;font-weight:700;background:var(--purple-bg);color:var(--purple);padding:2px 8px;border-radius:10px;letter-spacing:.3px;}
+.perfil-resumen{font-size:12px;color:var(--text2);}
+.perfil-chevron{font-size:14px;color:var(--text3);transition:transform .2s;}
+.perfil-chevron.open{transform:rotate(180deg);}
+.perfil-body{display:none;padding:16px 20px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.perfil-body.open{display:block;}
+.perfil-changed{font-size:11px;color:var(--purple);font-weight:600;margin-top:8px;display:none;}
+
+/* FORM */
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.field-label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+.field-req{color:var(--red);margin-left:2px;}
+.field-control{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);transition:border-color .15s;}
+.field-control:focus{outline:none;border-color:var(--accent);}
+.field-control:disabled{opacity:.5;cursor:not-allowed;background:var(--surface2);}
+select.field-control{appearance:auto;}
+textarea.field-control{resize:vertical;min-height:72px;}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;min-width:0;}
+.field-hint{font-size:11px;color:var(--text3);margin-top:3px;}
+
+/* SUBSECCIÓN */
+.sub-divider{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--border);}
+
+/* COND BOX */
+.cond-box{border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;background:var(--surface);}
+.cond-box.highlight{border-color:var(--accent);background:var(--accent-light);}
+.cond-box.highlight-post{border-color:var(--green);background:var(--green-bg);}
+.cond-box-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;}
+.cond-box.highlight .cond-box-label{color:var(--accent);}
+.cond-box.highlight-post .cond-box-label{color:var(--green);}
+
+/* HISTORIAL */
+.hist-item{border-left:2px solid var(--border);padding:8px 0 8px 14px;margin-bottom:10px;}
+.hist-fecha{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;}
+.hist-actividad{font-weight:600;font-size:13px;margin:2px 0;}
+.hist-script{font-size:12px;color:var(--text2);}
+.hist-canal{font-size:11px;color:var(--text3);margin-top:2px;}
+.hist-obs{font-size:12px;color:var(--text2);margin-top:3px;font-style:italic;}
+
+/* LOGIN */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px 36px;width:100%;max-width:380px;box-shadow:var(--shadow-lg);text-align:center;}
+.login-logo{font-size:36px;margin-bottom:8px;}
+.login-title{font-size:22px;font-weight:700;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.6;}
+.login-storage{font-size:11px;color:var(--teal);background:var(--teal-bg);padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:20px;text-align:left;}
+.btn-google{width:100%;padding:11px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s;}
+.btn-google:hover{background:#4285F4;color:#fff;border-color:#4285F4;}
+.btn-google:disabled{opacity:.6;cursor:not-allowed;}
+.btn-demo{background:none;border:none;color:var(--text3);font-size:12px;text-decoration:underline;cursor:pointer;margin-top:12px;display:block;width:100%;}
+.login-status{font-size:12px;color:var(--text3);margin-top:10px;min-height:18px;}
+.login-status.err{color:var(--red);}
+.login-storage{font-size:11px;color:var(--teal);background:var(--teal-bg);padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:20px;text-align:left;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--text);color:var(--surface);padding:12px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transform:translateY(8px);transition:all .25s;}
+.toast.show{opacity:1;pointer-events:auto;transform:translateY(0);}
+.toast.ok{background:var(--green);}
+.toast.err{background:var(--red);}
+
+/* MODAL CONFIRMACIÓN POST-GUARDADO */
+.confirm-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;}
+.confirm-modal{background:var(--surface);border-radius:12px;box-shadow:var(--shadow-lg);width:100%;max-width:480px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;}
+.confirm-modal-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.confirm-modal-icon{font-size:20px;margin-bottom:6px;}
+.confirm-modal-title{font-weight:700;font-size:15px;color:var(--text);}
+.confirm-modal-sub{font-size:12px;color:var(--text2);margin-top:3px;}
+.confirm-modal-body{padding:16px 20px;overflow-y:auto;flex:1;}
+.confirm-modal-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:10px;}
+.confirm-chips{display:flex;flex-direction:column;gap:8px;}
+.confirm-chip{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);cursor:pointer;transition:all .15s;text-align:left;}
+.confirm-chip:hover{border-color:var(--accent);background:var(--accent-light);}
+.confirm-chip-icon{font-size:18px;flex-shrink:0;}
+.confirm-chip-text{flex:1;min-width:0;}
+.confirm-chip-act{font-size:12px;font-weight:700;color:var(--accent);}
+.confirm-chip-desc{font-size:11px;color:var(--text2);margin-top:1px;}
+.confirm-chip-arrow{font-size:14px;color:var(--text3);flex-shrink:0;}
+.confirm-modal-footer{padding:12px 20px 16px;display:flex;gap:8px;border-top:1px solid var(--border);flex-shrink:0;}
+.confirm-btn-close{flex:1;padding:9px;font-size:13px;font-weight:600;border:1.5px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text2);cursor:pointer;}
+.confirm-btn-close:hover{background:var(--surface2);}
+.confirm-saved-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);padding:3px 8px;border-radius:20px;margin-bottom:10px;}
+
+/* TABLA VALIDACIÓN EN MODAL */
+.confirm-tabla-toggle{width:100%;margin-top:16px;padding:9px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;color:var(--text2);text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .15s;}
+.confirm-tabla-toggle:hover{background:var(--accent-light);color:var(--accent);}
+.confirm-tabla-arrow{font-size:11px;}
+.confirm-tabla-content{margin-top:8px;display:flex;flex-direction:column;gap:14px;}
+.confirm-tabla-seccion{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.confirm-tabla-cat{font-size:11px;font-weight:700;letter-spacing:.5px;padding:7px 12px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.confirm-tabla-row{padding:7px 12px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr;gap:2px;}
+.confirm-tabla-row:last-child{border-bottom:none;}
+.confirm-tabla-row--actual{background:var(--accent-light);}
+.confirm-tabla-etiqueta{font-size:12px;font-weight:600;color:var(--text);}
+.confirm-tabla-script{font-size:10px;color:var(--text3);font-style:italic;}
+.confirm-tabla-nexts{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
+.confirm-tabla-next{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--accent-light);color:var(--accent);}
+.confirm-tabla-next--none{background:var(--surface2);color:var(--text3);font-weight:400;}
+
+[hidden]{display:none!important;}
+
+/* CAMPOS AUTO */
+.auto-fields-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+.auto-field{display:flex;flex-direction:column;gap:2px;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:7px 10px;flex:1;min-width:130px;}
+.auto-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);}
+.auto-value{font-size:12px;font-weight:600;color:var(--accent);}
+.auto-hint{font-size:11px;color:var(--text3);font-style:italic;margin-bottom:10px;}
+
+/* SCORE ROW */
+.score-row{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);}
+.score-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);flex-shrink:0;}
+.score-pts{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);min-width:44px;}
+.score-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;letter-spacing:.3px;}
+.score-badge.alta{background:var(--red-bg);color:var(--red);}
+.score-badge.media{background:var(--orange-bg);color:var(--orange);}
+.score-badge.baja{background:var(--green-bg);color:var(--green);}
+.score-badge.nd{background:var(--surface2);color:var(--text3);}
+.score-freq{font-size:11px;color:var(--text2);margin-left:auto;}
+
+/* ALERTAS CRÍTICAS */
+.alerta-critica{padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;letter-spacing:.2px;margin-bottom:6px;}
+.alerta-fallecido{background:var(--red-bg);color:var(--red);border:2px solid var(--red);}
+.alerta-no-llamar{background:var(--red-bg);color:var(--red);border:2px solid var(--red);opacity:.85;}
+
+/* CONTADOR LS */
+.ls-counter{font-size:11px;color:var(--text3);background:var(--surface2);border-radius:var(--radius-sm);padding:2px 7px;font-variant-numeric:tabular-nums;}
+
+@media(max-width:600px){.sidebar{display:none;}.content{padding:16px;}.filter-row .filter-btn{font-size:11px;padding:4px 8px;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🧭</div>
+    <h1 class="login-title">NAV Sistema</h1>
+    <p class="login-sub">Navegadores en Red<br>Hospital Puerto Montt · SSDR</p>
+    <div class="login-storage">☁️ Datos en Firebase — compartidos en tiempo real con todo el equipo Navegadores.</div>
+    <button class="btn-google" id="btnGoogle" onclick="login()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Iniciar sesión con Google
+    </button>
+    <div class="login-status" id="loginStatus"></div>
+    <button class="btn-demo" onclick="loginDemo()">Modo demo (sin conexión)</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" hidden>
+  <div class="topbar">
+    <div class="topbar-logo"><span class="topbar-logo-dot"></span> NAV Sistema</div>
+    <span class="topbar-esp" id="topbarEsp">Dermatología</span>
+    <span class="topbar-badge" id="topbarBadge">Firebase</span>
+    <span class="topbar-sep"></span>
+    <span class="ls-counter" id="lsCounter"></span>
+    <span class="topbar-user" id="topbarUser"></span>
+    <button class="topbar-theme" onclick="toggleTheme()">◑</button>
+    <button class="topbar-logout" onclick="logout()">Salir</button>
+  </div>
+  <div class="main">
+    <nav class="sidebar">
+      <button class="sidebar-item active" onclick="showView('bandeja',this)">📋 Bandeja</button>
+      <button class="sidebar-item" onclick="showView('casos',this)">👤 Casos</button>
+      <button class="sidebar-item" onclick="showView('dashboard',this)">📊 Dashboard</button>
+    </nav>
+    <main class="content">
+      <div id="view-bandeja">
+        <div class="content-header">
+          <h1 class="content-title">Bandeja de trabajo</h1>
+          <button class="btn-primary" onclick="openDrawer(null)">+ Nueva gestión</button>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn fv active" onclick="toggleFilter('VENCIDO',this)">🔴 Vencido</button>
+          <button class="filter-btn fh active" onclick="toggleFilter('HOY',this)">🟠 Hoy</button>
+          <button class="filter-btn fp active" onclick="toggleFilter('PENDIENTE',this)">🟡 Pendiente</button>
+          <button class="filter-btn fg active" onclick="toggleFilter('PROGRAMADO',this)">🟢 Programado</button>
+        </div>
+        <div class="casos-list" id="casosList"></div>
+      </div>
+      <div id="view-casos" hidden style="text-align:center;padding:60px 0;color:var(--text2)">
+        <div style="font-size:40px;margin-bottom:12px">👤</div>
+        <div style="font-weight:600">Buscador de casos</div>
+        <div style="font-size:13px;margin-top:6px">Próximamente — integración Graph API</div>
+      </div>
+      <div id="view-dashboard" hidden style="text-align:center;padding:60px 0;color:var(--text2)">
+        <div style="font-size:40px;margin-bottom:12px">📊</div>
+        <div style="font-weight:600">Dashboard</div>
+        <div style="font-size:13px;margin-top:6px">Próximamente — KPIs semanales MINSAL</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-header-info">
+      <div class="drawer-title" id="drawerTitle">Registrar gestión</div>
+      <div class="drawer-subtitle" id="drawerSubtitle"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+
+  <div class="drawer-body" id="drawerBody">
+    <form id="gestionForm" onsubmit="submitGestion(event)">
+
+      <!-- ALERTAS CRÍTICAS -->
+      <div id="alertaCritica" hidden style="padding:10px 20px 0;">
+        <div id="alertaFallecido" hidden class="alerta-critica alerta-fallecido">☠ FALLECIDO — No contactar. Verificar egreso.</div>
+        <div id="alertaNoLlamar" hidden class="alerta-critica alerta-no-llamar">🚫 NO LLAMAR — Caso con indicación de no contacto.</div>
+      </div>
+
+      <!-- ① PERFIL DEL PACIENTE -->
+      <div class="perfil-header" onclick="togglePerfil()">
+        <div class="perfil-header-left">
+          <span class="perfil-badge">PERFIL</span>
+          <span class="perfil-resumen" id="perfilResumen">Sin datos de perfil — expandir para completar</span>
+        </div>
+        <span class="perfil-chevron" id="perfilChevron">▼</span>
+      </div>
+      <div class="perfil-body" id="perfilBody">
+
+        <!-- Datos básicos -->
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">¿Desea acompañamiento?<span class="field-req">*</span></label>
+            <select id="p_acompaniamiento" class="field-control" onchange="marcarPerfilCambiado()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">¿Fue citado?</label>
+            <select id="p_citado" class="field-control" onchange="marcarPerfilCambiado()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">¿Ha tenido NSP previo?</label>
+            <select id="p_nsp_previo" class="field-control" onchange="marcarPerfilCambiado()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">¿Barreras sociodemográficas?</label>
+            <select id="p_barreras" class="field-control" onchange="marcarPerfilCambiado()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fecha nacimiento → edad automática -->
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Fecha de nacimiento</label>
+            <input type="date" id="p_fecha_nac" class="field-control" onchange="onFechaNacChange();marcarPerfilCambiado()">
+            <div class="field-hint" id="edad_hint"></div>
+          </div>
+          <div class="field">
+            <label class="field-label">Previsión de salud</label>
+            <select id="p_prevision" class="field-control" onchange="marcarPerfilCambiado()">
+              <option value="">No lo sabe</option>
+              <option>01 FONASA</option><option>02 ISAPRE</option>
+              <option>03 FFAA - CARAB</option><option>04 PARTICULAR</option><option>05 OTRO</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Territorio -->
+        <div class="sub-divider">Territorio y acceso</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Dónde vive</label>
+            <select id="p_donde_vive" class="field-control" onchange="onDondeViveChange();marcarPerfilCambiado()">
+              <option value="">No lo sabe</option>
+              <option>URBANO</option><option>RURAL</option><option>ZER</option>
+            </select>
+            <div class="field-hint" id="zer_hint" hidden>ZER: zona de extrema ruralidad — suma prioridad alta en el score</div>
+          </div>
+          <div class="field">
+            <label class="field-label">¿Dificultad de acceso al HPM?</label>
+            <select id="p_acceso" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Medio de desplazamiento</label>
+            <select id="p_transporte" class="field-control" onchange="marcarPerfilCambiado()">
+              <option value="">No lo sabe</option>
+              <option>01 AÉREO</option><option>02 MARÍTIMO</option>
+              <option>03 TERRESTRE</option><option>04 BIMODAL</option>
+            </select>
+          </div>
+          <div class="field" style="flex:0 0 auto;width:auto;"></div>
+        </div>
+
+        <!-- Dimensión clínica -->
+        <div class="sub-divider">Dimensión clínica (Score Clínico)</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Red de apoyo</label>
+            <select id="p_red" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">No lo sabe</option>
+              <option>01 AUSENTE</option><option>02 DEBIL</option><option>03 FUERTE</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Nivel de dependencia</label>
+            <select id="p_dependencia" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">No lo sabe</option>
+              <option>01 INDEPENDIENTE</option><option>02 LEVE</option>
+              <option>03 MODERADA</option><option>04 SEVERA</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Nivel discapacidad (credencial)</label>
+            <select id="p_nivel_discapacidad" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">No lo sabe</option>
+              <option>00 SIN DISCAPACIDAD</option>
+              <option>01 LEVE</option><option>02 MODERADA</option><option>03 SEVERA</option>
+              <option>04 SIN CREDENCIAL</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">ECICEP (Estratificación)</label>
+            <select id="p_ecicep" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">Sin dato / #N/D</option>
+              <option>G0</option><option>G1</option><option>G2</option><option>G3</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dimensión social (Score Social — cálculo interno) -->
+        <div class="sub-divider">Dimensión social (Score Social — prioridad por ley)</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">¿Institucionalizado?</label>
+            <select id="p_institucionalizado" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">¿Es cuidador de alguien?</label>
+            <select id="p_cuidador" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">¿Beneficiario PRAIS?</label>
+            <select id="p_prais" class="field-control" onchange="marcarPerfilCambiado();calcularScore()">
+              <option value="">No lo sabe</option>
+              <option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+          <div class="field"></div>
+        </div>
+
+        <!-- Score calculado -->
+        <div class="score-row" id="scoreRow">
+          <div class="score-label">Score Clínico</div>
+          <div class="score-pts" id="scorePts">—</div>
+          <div class="score-badge nd" id="scoreBadge">—</div>
+          <div class="score-freq" id="scoreFreq"></div>
+        </div>
+
+        <div class="perfil-changed" id="perfilChanged">⚠ Perfil modificado — se actualizará al guardar</div>
+      </div>
+
+      <!-- ② DATOS DE LA GESTIÓN -->
+      <div class="section">
+        <div class="section-title"><span></span> Gestión NAV HPM</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Fecha<span class="field-req">*</span></label>
+            <input type="datetime-local" id="f_fecha" class="field-control" required>
+          </div>
+          <div class="field">
+            <label class="field-label">Navegador/a<span class="field-req">*</span></label>
+            <select id="f_navegador" class="field-control" required>
+              <option value="">Seleccione…</option>
+              <option>IVANNIA</option><option>YESENIA</option><option>DAVID</option>
+              <option>MACARENA</option><option>CAMILA</option><option>ALEXIA</option>
+              <option>PAULO</option><option>CINTHYA</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Actividad Navegador — COL78<span class="field-req">*</span></label>
+          <select id="f_actividad" class="field-control" required onchange="onActividadChange()">
+            <option value="">Seleccione actividad…</option>
+            <option>SIN GESTION DE CONTACTABILIDAD</option>
+            <option>VINCULACION</option>
+            <option>PRE-CONSULTA</option>
+            <option>ACTUALIZACION DEL ESTADO</option>
+            <option>PREPARACION SOLICITUD EXAMENES</option>
+            <option>PREPARACION REVISION EXAMENES</option>
+            <option>GESTION DE REPRIORIZACION Y AGENDA</option>
+            <option>GESTION DE CONFIRMACION DE CITA</option>
+            <option>POST ATENCION</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Script Detalle — COL79<span class="field-req">*</span></label>
+          <select id="f_script" class="field-control" required disabled onchange="onScriptChange()">
+            <option value="">— Seleccione actividad primero —</option>
+          </select>
+        </div>
+
+        <!-- POST ATENCION COL81 -->
+        <div id="postAtencionBox" class="cond-box highlight-post" hidden>
+          <div class="cond-box-label">📋 Post Atención — COL81</div>
+          <div class="field" style="margin-bottom:0">
+            <select id="f_post_atencion" class="field-control">
+              <option value="">Seleccione resultado…</option>
+              <option>SE MANTIENE EN CONTROL Y TTO CON ESPECIALIDAD (VERIFICAR REQUERIMIENTO DE EXAMENES O PROC SOLICITADOS)</option>
+              <option>DERIVACION A SEGUNDA ESPECIALIDAD PARA COMPLEMENTAR ATENCION Y/O DG</option>
+              <option>ORDEN DE ATENCION PARA INGRESO A URGENCIA</option>
+              <option>ORDEN DE ATENCION PARA INGRESO HOSPITALIZADO</option>
+              <option>DERIVACION A UNIDAD DE PACIENTE PREQUIRURGICO</option>
+              <option>ALTA DE ATENCION Y DERIVACION A APS</option>
+              <option>ALTA DE ATENCION Y DERIVACION A SEGUNDA ESPECIALIDAD</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Canal<span class="field-req">*</span></label>
+          <select id="f_canal" class="field-control" required onchange="onCanalChange()">
+            <option value="">Seleccione…</option>
+            <option>ANEXO LLAMADA</option><option>CELULAR LLAMADA</option>
+            <option>PRESENCIAL</option><option>SMS</option><option>WHATSAPP</option>
+          </select>
+        </div>
+
+        <!-- Campos automáticos -->
+        <div class="auto-fields-row">
+          <div class="auto-field">
+            <span class="auto-label">Clasificación respuesta</span>
+            <span class="auto-value" id="auto_clasificacion">—</span>
+            <input type="hidden" id="f_clasificacion">
+          </div>
+          <div class="auto-field">
+            <span class="auto-label">Estado seguimiento</span>
+            <span class="auto-value" id="auto_estado_seg">—</span>
+            <input type="hidden" id="f_estado_seg">
+          </div>
+          <div class="auto-field">
+            <span class="auto-label">Acción hoy</span>
+            <span class="auto-value" id="auto_accion_hoy">—</span>
+            <input type="hidden" id="f_accion_hoy">
+          </div>
+          <div class="auto-field">
+            <span class="auto-label">Tipo llamado</span>
+            <span class="auto-value" id="auto_tipo_llamado">—</span>
+            <input type="hidden" id="f_tipo_llamado">
+          </div>
+          <div class="auto-field">
+            <span class="auto-label">Prioridad contacto</span>
+            <span class="auto-value" id="auto_prioridad">—</span>
+            <input type="hidden" id="f_prioridad_contacto">
+          </div>
+          <div class="auto-field">
+            <span class="auto-label">Fecha próx. contacto</span>
+            <span class="auto-value" id="auto_proxima">—</span>
+            <input type="hidden" id="f_proxima">
+          </div>
+        </div>
+        <div class="auto-field" style="grid-column:1/-1;margin-top:4px">
+          <span class="auto-label">Interpretación</span>
+          <span class="auto-value" id="auto_tipo_desc" style="font-weight:400;color:var(--text2);font-size:12px">—</span>
+        </div>
+        <div class="auto-hint">⚙ Campos calculados automáticamente según actividad, script y score clínico.</div>
+
+        <!-- Campos operativos -->
+        <div class="field-row" style="margin-top:14px">
+          <div class="field">
+            <label class="field-label">Gestión (estado del caso)<span class="field-req">*</span></label>
+            <select id="f_gestion" class="field-control" required>
+              <option value="">Seleccione…</option>
+              <option>PENDIENTE</option>
+              <option>EN ACOMPAÑAMIENTO</option>
+              <option>RESUELTO</option>
+            </select>
+            <div class="field-hint">RESUELTO oculta el caso de la bandeja activa.</div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">¿Egresar de SIC?</label>
+            <select id="f_egresar_sic" class="field-control">
+              <option value="">No aplica</option><option>SI</option><option>NO</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">¿Rechaza atención?</label>
+            <select id="f_rechaza" class="field-control">
+              <option value="">No aplica</option><option>01 SI</option><option>02 NO</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ MOTIVO NSP -->
+      <div id="nspBox" class="section" hidden>
+        <div class="section-title"><span></span> Motivo No Se Presentó (NSP)</div>
+        <div class="field">
+          <select id="f_motivo_nsp" class="field-control">
+            <option value="">Seleccione motivo…</option>
+            <option>ACCESO TERRITORIAL Y TRANSPORTE</option>
+            <option>CUIDADO Y SITUACION PERSONAL</option>
+            <option>DECISION PERSONAL O PERCEPCION CLINICA</option>
+            <option>DESGASTE POR CONTACTO</option>
+            <option>DIFICULTAD ECONOMICA PARA EL TRASLADO</option>
+            <option>EXPERIENCIA PREVIA NEGATIVA</option>
+            <option>INFORMACION O COMPRENSION DE LA CITA</option>
+            <option>PROBLEMA ADMINISTRATIVO O DEL PROCESO</option>
+            <option>PROBLEMA DE SALUD QUE DIFICULTA EL TRASLADO</option>
+            <option>TRABAJO E INGRESOS</option>
+            <option>OTRO</option>
+            <option>LLAMAR POR MOTIVO DE NSP</option>
+            <option>FALLECIDO</option>
+            <option>HOSPITALIZACION</option>
+            <option>NO LLAMAR</option>
+            <option>NO CONTACTABLE</option>
+            <option>RECHAZA ACOMPAÑAMIENTO O NO INFORMA</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ④ CAMPOS CLÍNICOS (solo si hay contacto directo) -->
+      <div id="clinicosBox" class="section" hidden>
+        <div class="section-title"><span></span> Estado clínico en el contacto</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">¿Urgencia reciente relacionada?</label>
+            <select id="f_urgencia" class="field-control" onchange="calcularScore()">
+              <option value="">—</option>
+              <option>01 SI</option><option>02 NO</option><option>03 NO SABE</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">¿Estuvo hospitalizado?</label>
+            <select id="f_hospitalizado" class="field-control" onchange="calcularScore()">
+              <option value="">—</option>
+              <option>01 SI</option><option>02 NO</option><option>03 NO SABE</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">¿Ha presentado sintomatología asociada?</label>
+          <select id="f_sintomas" class="field-control" onchange="calcularScore()">
+            <option value="">—</option>
+            <option>01 AUSENTE</option><option>02 ESPORADICO</option><option>03 FRECUENTE</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ⑤ OBSERVACIÓN -->
+      <div class="section">
+        <div class="section-title"><span></span> Notas</div>
+        <div class="field">
+          <textarea id="f_observacion" class="field-control" rows="3" placeholder="Notas libres de la gestión…"></textarea>
+        </div>
+      </div>
+
+      <!-- ⑥ HISTORIAL -->
+      <div class="section">
+        <div class="section-title"><span></span> Gestiones anteriores</div>
+        <div id="drawerHistorial"></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="drawer-footer">
+    <button class="btn-cancel" type="button" onclick="closeDrawer()">Cancelar</button>
+    <button class="btn-save" type="submit" form="gestionForm">💾 Guardar gestión</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══ FIREBASE CONFIG ══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyC9x0HpaCXveHNtcfvcPg1yVRJCLkFElzo",
+  authDomain: "gestor-navegadores-hpm.firebaseapp.com",
+  projectId: "gestor-navegadores-hpm",
+  storageBucket: "gestor-navegadores-hpm.firebasestorage.app",
+  messagingSenderId: "397305867146",
+  appId: "1:397305867146:web:03dd132581059086cfb673"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// Colecciones Firestore
+const COL_CASOS     = 'casos';
+const COL_GESTIONES = 'gestiones';
+
+// ── Caché local (evita re-leer Firestore en cada render) ─────────
+let _casosCached     = null;
+let _gestionesCached = null;
+let _modoDemo        = false;
+
+async function getCasos() {
+  if (_modoDemo) return _casosCached || DEMO_CASOS_INICIALES;
+  if (_casosCached) return _casosCached;
+  try {
+    const snap = await db.collection(COL_CASOS).get();
+    _casosCached = snap.empty ? DEMO_CASOS_INICIALES : snap.docs.map(d => ({ _fsId: d.id, ...d.data() }));
+  } catch { _casosCached = DEMO_CASOS_INICIALES; }
+  return _casosCached;
+}
+
+async function saveCaso(caso) {
+  if (_modoDemo) { _casosCached = (_casosCached||[]).map(c => c.id===caso.id ? caso : c); return; }
+  try {
+    if (caso._fsId) {
+      const { _fsId, ...data } = caso;
+      await db.collection(COL_CASOS).doc(_fsId).set(data, { merge: true });
+    } else {
+      const ref = await db.collection(COL_CASOS).add(caso);
+      caso._fsId = ref.id;
+    }
+    _casosCached = null; // invalidar caché
+  } catch(e) { console.error('saveCaso:', e); }
+}
+
+async function getGestiones(casoId) {
+  if (_modoDemo) return (_gestionesCached||[]).filter(g => !casoId || g.Caso_ID === casoId);
+  try {
+    const q = casoId
+      ? db.collection(COL_GESTIONES).where('Caso_ID','==',casoId).orderBy('_ts','desc')
+      : db.collection(COL_GESTIONES).orderBy('_ts','desc').limit(500);
+    const snap = await q.get();
+    return snap.docs.map(d => ({ _fsId: d.id, ...d.data() }));
+  } catch { return []; }
+}
+
+async function saveGestion(payload) {
+  if (_modoDemo) {
+    _gestionesCached = [{ ...payload, _id: Date.now() }, ...(_gestionesCached||[])];
+    return true;
+  }
+  try {
+    await db.collection(COL_GESTIONES).add({ ...payload, _ts: new Date().toISOString() });
+    return true;
+  } catch(e) { console.error('saveGestion:', e); return false; }
+}
+
+async function updateLsCounter() {
+  try {
+    const casos = await getCasos();
+    const el    = document.getElementById('lsCounter');
+    if (el) el.textContent = _modoDemo ? `${casos.length} casos · demo` : `${casos.length} casos · Firebase ☁️`;
+  } catch {}
+}
+
+// ══ SCRIPTS MINSAL (V96 oct 2025) ════════════════════════════════
+const SCRIPTS = {
+  'SIN GESTION DE CONTACTABILIDAD': [
+    'SEGUN REGISTROS SOLICITUD DE INDICACION DUPLICADA',
+    'SEGUN REGISTROS USUARIO YA FUE ATENDIDO',
+    'SEGUN REGISTROS USUARIO BENEFICIARIO GES',
+    'SEGUN REGISTROS USUARIO NO ES BENEFICIARIO',
+    'SEGUN REGISTROS USUARIO RECHAZA LA ATENCION DE FORMA DEFINITIVA',
+    'SEGUN REGISTROS USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'SEGUN REGISTROS FALLECIMIENTO DE USUARIO',
+    'SEGUN REGISTROS USUARIO NO CONTACTABLE (SEGUN NT118)',
+    'SEGUN REGISTROS USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'SEGUN REGISTROS USUARIO CON SOLICITUD DE POSTERGACION REITERADA',
+    'SEGUN REGISTROS NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'SEGUN REGISTROS NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)',
+    'SEGUN REGISTROS USUARIO EN GESTION DE LA NO CONTACTABILIDAD (CARTA O VISITA)',
+    'SEGUN REGISTROS USUARIO POSTERGA ATENCION EN 1RA O 2DA OPORTUNIDAD',
+    'SEGUN REGISTROS USUARIO INASISTENTE EN 1 OPORTUNIDAD, SE DEBE GENERAR 2DO LLAMADO',
+    'SIC GENERADA','SIC NO CREADA O NO ENCONTRADA'
+  ],
+  'VINCULACION': [
+    'VIGENTE, REQUIERE PRESTACION','USUARIO DECLARA SER BENEFICIARIO GES',
+    'USUARIO DECLARA NO SER BENEFICIARIO','USUARIO YA FUE ATENDIDO',
+    'USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ',
+    'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)'
+  ],
+  'PRE-CONSULTA': [
+    'CONFIRMACION Y ACEPTACION ACOMPAÑAMIENTO','USUARIO DECLARA SER BENEFICIARIO GES',
+    'USUARIO DECLARA NO SER BENEFICIARIO','USUARIO YA FUE ATENDIDO',
+    'USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ',
+    'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)'
+  ],
+  'ACTUALIZACION DEL ESTADO': [
+    'CONFIRMACION Y ACEPTACION ACOMPAÑAMIENTO','USUARIO DECLARA SER BENEFICIARIO GES',
+    'USUARIO DECLARA NO SER BENEFICIARIO','USUARIO YA FUE ATENDIDO',
+    'USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ',
+    'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)'
+  ],
+  'PREPARACION SOLICITUD EXAMENES': [
+    'SE SOLICITAN EXAMENES DE PREPARACION','USUARIO DECLARA SER BENEFICIARIO GES',
+    'USUARIO DECLARA NO SER BENEFICIARIO','USUARIO YA FUE ATENDIDO',
+    'USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ',
+    'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)'
+  ],
+  'PREPARACION REVISION EXAMENES': [
+    'REVISION DE SOLICITUD DE EXAMENES',
+    'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_1 (SE REAGENDA)',
+    'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_2 (SE REAGENDA)',
+    'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_3 (SE INFORMA CASO A GESTION DE LA DDA)',
+    'USUARIO DECLARA SER BENEFICIARIO GES','USUARIO DECLARA NO SER BENEFICIARIO',
+    'USUARIO YA FUE ATENDIDO','USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ',
+    'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)'
+  ],
+  'GESTION DE REPRIORIZACION Y AGENDA': [
+    'COORDINACION PARA LA REPRIORIZACION CLINICA Y AGENDA SEGUN OFERTA',
+    'USUARIO NO ASISTE A CITA DE CNE_1 (SE REAGENDA)',
+    'USUARIO NO ASISTE A CITA DE CNE_2 (SE REAGENDA)',
+    'USUARIO NO ASISTE A CITA DE CNE_3 (SE INFORMA CASO A GESTION DE LA DDA)',
+    'USUARIO DECLARA SER BENEFICIARIO GES','USUARIO DECLARA NO SER BENEFICIARIO',
+    'USUARIO YA FUE ATENDIDO','USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION CNE 1RA O 2DA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION DE CONTROL ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION DE CONTROL 1RA O 2DA VEZ',
+    'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)'
+  ],
+  'GESTION DE CONFIRMACION DE CITA': [
+    'SE CONFIRMA ASISTENCIA A CITA','SOLICITA CAMBIO DE CITA',
+    'USUARIO DECLARA SER BENEFICIARIO GES','USUARIO DECLARA NO SER BENEFICIARIO',
+    'USUARIO YA FUE ATENDIDO','USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ',
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ',
+    'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)',
+    'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)'
+  ],
+  'POST ATENCION': [
+    'GESTION DE INDICACIONES MEDICAS (POST ATENCION)',
+    'USUARIO DECLARA SER BENEFICIARIO GES','USUARIO DECLARA NO SER BENEFICIARIO',
+    'USUARIO YA FUE ATENDIDO','USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA',
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO','SOLICITUD DE INDICACION DUPLICADA',
+    'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS',
+    'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO',
+    'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO',
+    'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD',
+    'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION',
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ'
+  ]
+};
+
+const CANALES_CONTACTO_DIRECTO = new Set(['CELULAR LLAMADA','ANEXO LLAMADA','WHATSAPP','PRESENCIAL','SMS']);
+
+// ══ DEMO DATA INICIAL ═══════════════════════════════════════════
+const DEMO_CASOS_INICIALES = [
+  {
+    id:'HD-0045821', nombre:'Andrea Contreras M.', especialidad:'Dermatología', prioridad:'P2',
+    estado:'VENCIDO', proxima:'2026-09-28',
+    perfil:{ acceso:'01 SI', red:'02 DEBIL', transporte:'03 TERRESTRE', donde_vive:'RURAL',
+      dependencia:'01 INDEPENDIENTE', institucionalizado:'02 NO', cuidador:'02 NO',
+      prevision:'01 FONASA', nivel_discapacidad:'04 SIN CREDENCIAL',
+      prais:'02 NO', acompaniamiento:'01 SI', ecicep:'G2', fecha_nac:'1960-04-15' },
+    gestiones:[
+      { fecha:'2026-09-15 10:30', actividad:'PRE-CONSULTA', script:'CONFIRMACION Y ACEPTACION ACOMPAÑAMIENTO', canal:'CELULAR LLAMADA', obs:'Paciente confirma cita para el 28.' },
+      { fecha:'2026-09-01 09:00', actividad:'VINCULACION', script:'VIGENTE, REQUIERE PRESTACION', canal:'CELULAR LLAMADA', obs:'Primer contacto exitoso.' }
+    ]
+  },
+  {
+    id:'HD-0038104', nombre:'Juan Carlos Pérez R.', especialidad:'Dermatología', prioridad:'P1',
+    estado:'HOY', proxima:'2026-10-03',
+    perfil:{ acceso:'02 NO', red:'03 FUERTE', transporte:'03 TERRESTRE', donde_vive:'URBANO',
+      dependencia:'01 INDEPENDIENTE', institucionalizado:'02 NO', cuidador:'02 NO',
+      prevision:'01 FONASA', nivel_discapacidad:'00 SIN DISCAPACIDAD',
+      prais:'02 NO', acompaniamiento:'01 SI', ecicep:'', fecha_nac:'1985-07-22' },
+    gestiones:[
+      { fecha:'2026-09-20 14:00', actividad:'GESTION DE CONFIRMACION DE CITA', script:'SE CONFIRMA ASISTENCIA A CITA', canal:'CELULAR LLAMADA', obs:'Confirma cita para hoy.' }
+    ]
+  },
+  {
+    id:'HD-0052339', nombre:'María Ignacia Soto F.', especialidad:'Dermatología', prioridad:'P3',
+    estado:'PENDIENTE', proxima:null,
+    perfil:{ acceso:'', red:'', transporte:'', donde_vive:'', dependencia:'',
+      institucionalizado:'', cuidador:'', prevision:'', nivel_discapacidad:'',
+      prais:'', acompaniamiento:'', ecicep:'', fecha_nac:'' },
+    gestiones:[]
+  },
+  {
+    id:'HD-0041770', nombre:'Roberto Alvarado G.', especialidad:'Dermatología', prioridad:'P2',
+    estado:'PROGRAMADO', proxima:'2026-10-15',
+    perfil:{ acceso:'01 SI', red:'01 AUSENTE', transporte:'02 MARÍTIMO', donde_vive:'RURAL',
+      dependencia:'02 LEVE', institucionalizado:'02 NO', cuidador:'02 NO',
+      prevision:'01 FONASA', nivel_discapacidad:'00 SIN DISCAPACIDAD',
+      prais:'', acompaniamiento:'01 SI', ecicep:'G0', fecha_nac:'1958-11-03' },
+    gestiones:[
+      { fecha:'2026-09-25 11:00', actividad:'PRE-CONSULTA', script:'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ', canal:'CELULAR LLAMADA', obs:'Reprogramó para el 15 de octubre.' }
+    ]
+  },
+  {
+    id:'HD-0049210', nombre:'Carmen Luz Muñoz T.', especialidad:'Dermatología', prioridad:'P1',
+    estado:'VENCIDO', proxima:'2026-09-25',
+    perfil:{ acceso:'01 SI', red:'01 AUSENTE', transporte:'01 AÉREO', donde_vive:'ZER',
+      dependencia:'03 MODERADA', institucionalizado:'02 NO', cuidador:'01 SI',
+      prevision:'01 FONASA', nivel_discapacidad:'02 MODERADA',
+      prais:'01 SI', acompaniamiento:'01 SI', ecicep:'G3', fecha_nac:'1947-03-18' },
+    gestiones:[
+      { fecha:'2026-09-10 09:30', actividad:'VINCULACION', script:'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO', canal:'CELULAR LLAMADA', obs:'Tres intentos sin respuesta.' }
+    ]
+  }
+];
+
+// ══ ESTADO ══════════════════════════════════════════════════════
+let currentAccount = null, currentCaso = null;
+let activeFilters = new Set(['VENCIDO','HOY','PENDIENTE','PROGRAMADO']);
+let perfilModificado = false;
+
+// ══ AUTH (Firebase / Google) ═════════════════════════════════════
+async function login() {
+  const st = document.getElementById('loginStatus');
+  st.textContent = 'Redirigiendo a Google…';
+  st.className = 'login-status';
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithRedirect(provider);
+    // La página se recarga; onAuthStateChanged + getRedirectResult manejan el retorno
+  } catch(e) {
+    st.textContent = 'Error: ' + (e.message || e.code);
+    st.className = 'login-status err';
+  }
+}
+
+// Capturar resultado del redirect al volver de Google
+auth.getRedirectResult().then(result => {
+  // onAuthStateChanged ya maneja la sesión; esto solo atrapa errores del redirect
+}).catch(e => {
+  if (e.code && e.code !== 'auth/no-current-user') {
+    const st = document.getElementById('loginStatus');
+    if (st) { st.textContent = 'Error al volver de Google: ' + (e.message || e.code); st.className = 'login-status err'; }
+  }
+});
+
+function loginDemo() {
+  _modoDemo = true;
+  _casosCached = JSON.parse(JSON.stringify(DEMO_CASOS_INICIALES));
+  _gestionesCached = [];
+  showApp('Demo Navegadora');
+}
+
+function logout() {
+  if (_modoDemo) {
+    _modoDemo = false;
+    _casosCached = null;
+    _gestionesCached = null;
+    currentAccount = null;
+    document.getElementById('app').hidden = true;
+    document.getElementById('loginScreen').style.display = 'flex';
+    return;
+  }
+  auth.signOut();
+}
+
+// Persistencia de sesión: onAuthStateChanged
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentAccount = user;
+    _casosCached = null; // forzar recarga desde Firestore
+    showApp(user.displayName || user.email);
+  } else if (!_modoDemo) {
+    currentAccount = null;
+    document.getElementById('app').hidden = true;
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginStatus').textContent = '';
+  }
+});
+
+// ══ BANDEJA ══════════════════════════════════════════════════════
+function showApp(user) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').hidden = false;
+  document.getElementById('topbarUser').textContent = user;
+  renderBandeja();
+}
+
+const BADGE = {
+  VENCIDO:   { cls:'badge-vencido',   lbl:'🔴 Vencido'    },
+  HOY:       { cls:'badge-hoy',       lbl:'🟠 Hoy'        },
+  PENDIENTE: { cls:'badge-pendiente', lbl:'🟡 Pendiente'  },
+  PROGRAMADO:{ cls:'badge-programado',lbl:'🟢 Programado' }
+};
+
+async function renderBandeja() {
+  const casos  = await getCasos();
+  const order  = {VENCIDO:0,HOY:1,PENDIENTE:2,PROGRAMADO:3};
+  const list   = document.getElementById('casosList');
+  const filtered = casos
+    .filter(c => activeFilters.has(c.estado))
+    .sort((a,b) => order[a.estado] - order[b.estado]);
+
+  list.innerHTML = filtered.length === 0
+    ? '<div style="text-align:center;padding:40px;color:var(--text3)">Sin casos con los filtros actuales.</div>'
+    : filtered.map(c => {
+        const b = BADGE[c.estado];
+        const fecha = c.proxima
+          ? new Date(c.proxima + 'T12:00').toLocaleDateString('es-CL')
+          : '—';
+        const fechaColor = c.estado==='VENCIDO' ? 'var(--red)'
+          : c.estado==='HOY' ? 'var(--orange)' : 'var(--text)';
+        const scoreInfo = c.scoreClinico != null
+          ? `Score: ${c.scoreClinico} pts` : '';
+        return `<div class="caso-card" onclick="openDrawer('${c.id}')">
+          <span class="caso-badge ${b.cls}">${b.lbl}</span>
+          <div class="caso-info">
+            <div class="caso-id">${c.id} · ${c.prioridad}${scoreInfo ? ' · ' + scoreInfo : ''}</div>
+            <div class="caso-nombre">${c.nombre}</div>
+            <div class="caso-esp">${c.especialidad}</div>
+          </div>
+          <div class="caso-fecha">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.4px">Próximo</div>
+            <div style="font-weight:600;color:${fechaColor};font-variant-numeric:tabular-nums">${fecha}</div>
+          </div>
+          <button class="caso-action" onclick="event.stopPropagation();openDrawer('${c.id}')">+ Gestión</button>
+        </div>`;
+      }).join('');
+  updateLsCounter();
+}
+
+function toggleFilter(estado, btn) {
+  activeFilters.has(estado) ? activeFilters.delete(estado) : activeFilters.add(estado);
+  btn.classList.toggle('active', activeFilters.has(estado));
+  renderBandeja(); // async — no necesita await en este context
+}
+
+// ══ DRAWER ════════════════════════════════════════════════════════
+async function openDrawer(casoId) {
+  const casos = await getCasos();
+  currentCaso = casoId ? casos.find(c => c.id === casoId) : null;
+  perfilModificado = false;
+
+  document.getElementById('drawerTitle').textContent = 'Registrar gestión';
+  document.getElementById('drawerSubtitle').textContent = currentCaso
+    ? `${currentCaso.nombre} · ${currentCaso.id}` : 'Gestión sin caso seleccionado';
+
+  // Reset form
+  document.getElementById('gestionForm').reset();
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('f_fecha').value =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  // Pre-cargar perfil
+  cargarPerfil(currentCaso?.perfil);
+  document.getElementById('perfilChanged').style.display = 'none';
+
+  // Defaults
+  document.getElementById('f_egresar_sic').value = 'NO';
+  document.getElementById('f_rechaza').value = '02 NO';
+
+  // Reset condicionales
+  onActividadChange();
+  onCanalChange();
+
+  // Abrir drawer de inmediato, cargar historial en background
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerBody').scrollTop = 0;
+
+  // Historial desde Firestore
+  const hist = document.getElementById('drawerHistorial');
+  hist.innerHTML = '<div style="font-size:12px;color:var(--text3)">Cargando historial…</div>';
+  try {
+    const gs = await getGestiones(casoId);
+    const perfilGs = currentCaso?.gestiones || [];
+    const allGs = [...perfilGs.map(g => ({ ...g, _src:'perfil' })), ...gs.map(g => ({ ...g, _src:'fs' }))];
+    if (allGs.length) {
+      hist.innerHTML = allGs.map(g => `
+        <div class="hist-item">
+          <div class="hist-fecha">${g.fecha || g.Fecha_Gestion || ''}</div>
+          <div class="hist-actividad">${g.actividad || g.Actividad_Navegador || ''}</div>
+          <div class="hist-script">${g.script || g.Script_Detalle || ''}</div>
+          <div class="hist-canal">Canal: ${g.canal || g.Canal || ''}</div>
+          ${(g.obs||g.Observacion) ? `<div class="hist-obs">"${g.obs||g.Observacion}"</div>` : ''}
+        </div>`).join('');
+    } else {
+      hist.innerHTML = '<div style="font-size:12px;color:var(--text3)">Sin gestiones anteriores.</div>';
+    }
+  } catch {
+    hist.innerHTML = '<div style="font-size:12px;color:var(--text3)">No se pudo cargar historial.</div>';
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  currentCaso = null;
+}
+
+// ══ PERFIL ════════════════════════════════════════════════════════
+function cargarPerfil(p) {
+  const campos = ['acompaniamiento','citado','nsp_previo','barreras','acceso','donde_vive',
+    'transporte','prevision','red','dependencia','nivel_discapacidad','prais',
+    'institucionalizado','cuidador','ecicep'];
+  campos.forEach(c => {
+    const el = document.getElementById('p_'+c);
+    if (el) el.value = p?.[c] || '';
+  });
+  // Fecha nac
+  const fnEl = document.getElementById('p_fecha_nac');
+  if (fnEl) { fnEl.value = p?.fecha_nac || ''; onFechaNacChange(); }
+
+  onDondeViveChange();
+
+  const resumen = p?.acceso || p?.red
+    ? [p.acompaniamiento, p.acceso, p.red, p.donde_vive].filter(Boolean).join(' · ')
+    : 'Sin datos de perfil — expandir para completar';
+  document.getElementById('perfilResumen').textContent = resumen;
+
+  detectarAlertas();
+  calcularScore();
+}
+
+// ══ EDAD DESDE FECHA NAC ══════════════════════════════════════════
+function calcularEdad(fechaNac) {
+  if (!fechaNac) return null;
+  const hoy  = new Date();
+  const nac  = new Date(fechaNac + 'T12:00');
+  let edad   = hoy.getFullYear() - nac.getFullYear();
+  const m    = hoy.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+  return isNaN(edad) ? null : edad;
+}
+
+function onFechaNacChange() {
+  const fn   = document.getElementById('p_fecha_nac').value;
+  const hint = document.getElementById('edad_hint');
+  const edad = calcularEdad(fn);
+  if (edad !== null) {
+    const puntua = edad < 2 || edad >= 65;
+    hint.textContent = `Edad: ${edad} años${puntua ? ' · +2 pts (criterio etario)' : ''}`;
+    hint.style.color  = puntua ? 'var(--orange)' : 'var(--text3)';
+  } else {
+    hint.textContent = '';
+  }
+  calcularScore();
+}
+
+// ══ ALERTAS ════════════════════════════════════════════════════════
+function detectarAlertas() {
+  const gestiones = currentCaso?.gestiones || [];
+  const scripts   = gestiones.map(g => g.script || '');
+  const motivoNSP = gestiones.map(g => g.motivo_nsp || '');
+  const esFallecido = scripts.some(s => s.includes('FALLECIMIENTO') || s.includes('FALLECIDO'))
+    || motivoNSP.some(m => m === 'FALLECIDO');
+  const esNoLlamar  = scripts.some(s => s === 'SEGUN REGISTROS USUARIO NO CONTACTABLE (SEGUN NT118)')
+    || motivoNSP.some(m => m === 'NO LLAMAR');
+
+  document.getElementById('alertaFallecido').hidden = !esFallecido;
+  document.getElementById('alertaNoLlamar').hidden  = !esNoLlamar;
+  document.getElementById('alertaCritica').hidden   = !esFallecido && !esNoLlamar;
+}
+
+function togglePerfil() {
+  document.getElementById('perfilBody').classList.toggle('open');
+  document.getElementById('perfilChevron').classList.toggle('open');
+}
+
+function onDondeViveChange() {
+  const val   = document.getElementById('p_donde_vive').value;
+  const hint  = document.getElementById('zer_hint');
+  const acceso = document.getElementById('p_acceso');
+  // ZER no fuerza dificultad de acceso — alguien puede vivir en ZER y trabajar en PM
+  // Solo muestra hint informativo; dificultad de acceso siempre editable
+  acceso.disabled = false;
+  hint.hidden = (val !== 'ZER');
+  calcularScore();
+}
+
+function marcarPerfilCambiado() {
+  perfilModificado = true;
+  document.getElementById('perfilChanged').style.display = 'block';
+}
+
+// ══ SCORE CLÍNICO-SOCIAL (fórmula Gestor 3.0) ═══════════════════
+// SCORE_CLINICO (0–20 pts) determina complejidad y frecuencia
+// SCORE_SOCIAL  (0–3 pts)  es insumo de prioridad (backstage)
+function calcularScore() {
+  let clinico = 0;
+  let social  = 0;
+
+  // ── SCORE CLÍNICO ──────────────────────────────────────────────
+  // Criterio general: dato desconocido = riesgo no descartado = puntúa conservador (arriba)
+
+  // 1. Dificultad acceso: SI=+2, No lo sabe=+1 (no descartado)
+  const acceso = document.getElementById('p_acceso').value;
+  if (acceso === '01 SI') clinico += 2;
+  else if (acceso === '') clinico += 1; // no lo sabe → riesgo no descartado
+
+  // 1b. ZER: puntúa +1 adicional sobre cualquier acceso (ruralidad extrema)
+  const dondeVive = document.getElementById('p_donde_vive').value;
+  if (dondeVive === 'ZER') clinico += 1;
+
+  // 2. Red de apoyo: AUSENTE=+2, DEBIL=+1, No lo sabe=+1
+  const red = document.getElementById('p_red').value;
+  if (red.includes('AUSENTE')) clinico += 2;
+  else if (red.includes('DEBIL')) clinico += 1;
+  else if (red === '') clinico += 1; // no lo sabe → riesgo no descartado
+
+  // 3. Nivel dependencia: SEVERA=+3, MODERADA=+2, LEVE=+1, No lo sabe=+1
+  const dep = document.getElementById('p_dependencia').value;
+  if (dep.includes('SEVERA')) clinico += 3;
+  else if (dep.includes('MODERADA')) clinico += 2;
+  else if (dep.includes('LEVE')) clinico += 1;
+  else if (dep === '') clinico += 1; // no lo sabe → riesgo no descartado
+
+  // 4. Discapacidad: SEVERA=+3, MODERADA=+2, LEVE=+1, SIN CREDENCIAL=+1, No lo sabe=+1
+  const disc = document.getElementById('p_nivel_discapacidad').value;
+  if (disc.includes('03 SEVERA')) clinico += 3;
+  else if (disc.includes('02 MODERADA')) clinico += 2;
+  else if (disc.includes('01 LEVE')) clinico += 1;
+  else if (disc.includes('SIN CREDENCIAL')) clinico += 1;
+  else if (disc === '') clinico += 1; // no lo sabe → riesgo no descartado
+
+  // 5. ECICEP: G3=+2, G2=+1, vacío/#N/D=+1, G0/G1=0
+  const ecicep = document.getElementById('p_ecicep').value;
+  if (ecicep === 'G3') clinico += 2;
+  else if (ecicep === 'G2') clinico += 1;
+  else if (ecicep === '' || ecicep === '#N/D' || ecicep === '0') clinico += 1; // dato faltante suma 1
+  // G0 y G1 = 0
+
+  // 6. Urgencia reciente: SI = +2
+  const urg = document.getElementById('f_urgencia')?.value || '';
+  if (urg === '01 SI') clinico += 2;
+
+  // 7. Hospitalización: SI = +2
+  const hosp = document.getElementById('f_hospitalizado')?.value || '';
+  if (hosp === '01 SI') clinico += 2;
+
+  // 8. Sintomatología: FRECUENTE=+2, ESPORÁDICO=+1
+  const sint = document.getElementById('f_sintomas')?.value || '';
+  if (sint.includes('FRECUENTE')) clinico += 2;
+  else if (sint.includes('ESPORADICO')) clinico += 1;
+
+  // 9. Edad: <2 o ≥65 = +2
+  const fn   = document.getElementById('p_fecha_nac').value;
+  const edad = calcularEdad(fn);
+  if (edad !== null && (edad < 2 || edad >= 65)) clinico += 2;
+
+  // ── SCORE SOCIAL (insumo interno) ──────────────────────────────
+  // Institucionalizado: +1
+  const inst = document.getElementById('p_institucionalizado').value;
+  if (inst === '01 SI') social += 1;
+  // Cuidador: +1
+  const cuid = document.getElementById('p_cuidador').value;
+  if (cuid === '01 SI') social += 1;
+  // PRAIS: +1
+  const prais = document.getElementById('p_prais').value;
+  if (prais === '01 SI') social += 1;
+
+  // ── MOSTRAR ────────────────────────────────────────────────────
+  // Thresholds de complejidad (revisados oct-2026):
+  //   ALTA  ≥10 pts → contacto cada 30 días
+  //   MEDIA  5–9 pts → contacto cada 90 días
+  //   BAJA   <5 pts  → contacto cada 180 días
+  let complejidad, cls, dias;
+  if (clinico >= 10)    { complejidad = 'ALTA';  cls = 'alta';  dias = 30;  }
+  else if (clinico >= 5){ complejidad = 'MEDIA'; cls = 'media'; dias = 90;  }
+  else                  { complejidad = 'BAJA';  cls = 'baja';  dias = 180; }
+
+  document.getElementById('scorePts').textContent   = clinico + ' pts';
+  document.getElementById('scoreBadge').textContent  = complejidad;
+  document.getElementById('scoreBadge').className    = 'score-badge ' + cls;
+  document.getElementById('scoreFreq').textContent   = `Contacto c/${dias} días`;
+
+  window._scoreActual = { clinico, social, complejidad, dias };
+  calcularCamposAuto();
+}
+
+// ══ DROPDOWN DEPENDIENTE ══════════════════════════════════════════
+function onActividadChange() {
+  const actividad  = document.getElementById('f_actividad').value;
+  const scriptSel  = document.getElementById('f_script');
+  const postBox    = document.getElementById('postAtencionBox');
+  const postSel    = document.getElementById('f_post_atencion');
+
+  if (!actividad) {
+    scriptSel.innerHTML = '<option value="">— Seleccione actividad primero —</option>';
+    scriptSel.disabled = true;
+    postBox.hidden = true;
+    postSel.required = false;
+    return;
+  }
+  const scripts = SCRIPTS[actividad] || [];
+  scriptSel.innerHTML = '<option value="">Seleccione script…</option>' +
+    scripts.map(s => `<option value="${s}">${s}</option>`).join('');
+  scriptSel.disabled = false;
+
+  const esPost = actividad === 'POST ATENCION';
+  postBox.hidden = !esPost;
+  postSel.required = esPost;
+  if (!esPost) postSel.value = '';
+  calcularCamposAuto();
+}
+
+function onScriptChange() { calcularCamposAuto(); }
+
+// ══ TABLA DE REGLAS V96 — NOMBRES EXACTOS DEL CATÁLOGO MINSAL ════════
+// Fuente de verdad: Gestor de Casos 3.0 — lógica de ESTADO_CASO
+// Actividades: nombres exactos del Catálogo V96 (selectores del formulario)
+// Regla → { clas, estado, accion, tipo }
+//   clas:   clasificacion de la gestión (qué pasó)
+//   estado: NO_LLAMAR | SEGUIMIENTO | SIN_RESPUESTA | REVISAR
+//   accion: LLAMAR_ACOMPAÑAMIENTO | LLAMAR_SEGUIMIENTO | LLAMAR_VERIFICAR_EGRESO | NO_LLAMAR | SIN_RESPUESTA | REVISAR
+//   tipo:   descripción legible para el navegador
+
+const REGLA_DEFAULT_SIN_CANAL   = { clas:'SIN_REGISTRO',          estado:'REVISAR',       accion:'REVISAR',         tipo:'Sin canal registrado' };
+const REGLA_SIN_SCRIPT_CONTACTO = { clas:'CONTACTO_EFECTIVO',     estado:'SEGUIMIENTO',   accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Contacto efectivo — registrar resultado' };
+
+// ─── Bloques reutilizables (ESTADO_CASO del Gestor 3.0) ──────────────
+const _cierre_fallecido    = { clas:'FALLECIDO',            estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'Fallecido — cerrar caso' };
+// USUARIO YA FUE ATENDIDO detectado en actividad de acompañamiento (PRE-CONSULTA, VINCULACION, etc.)
+// → la gestión se cierra para Minsal (NO_REQUIERE_ATENCION), PERO el caso requiere POST ATENCION
+// → estado SEGUIMIENTO + accion LLAMAR_ACOMPAÑAMIENTO indica al navegador que hay una fase siguiente
+const _cierre_atendido     = { clas:'NO_REQUIERE_ATENCION', estado:'SEGUIMIENTO',   accion:'LLAMAR_ACOMPAÑAMIENTO',       tipo:'Ya atendido — iniciar seguimiento post-atención' };
+const _cierre_rechazo_at   = { clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'Rechazo atención definitivo — cerrar caso' };
+const _cierre_rechazo_ac   = { clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'Rechaza acompañamiento — cerrar caso' };
+const _cierre_no_pertinencia={ clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'No pertinencia — cerrar caso' };
+const _cierre_ges          = { clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'GES / no beneficiario — cerrar caso' };
+const _cierre_duplicada    = { clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'Indicación duplicada — cerrar caso' };
+const _cierre_inasistente  = { clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'Inasistente ×2 consecutivas — cerrar caso' };
+const _cierre_traslado     = { clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'NO_LLAMAR',                   tipo:'Traslado de establecimiento — cerrar caso' };
+const _cierre_posterg_reit = { clas:'NO_REQUIERE_ATENCION', estado:'NO_LLAMAR',     accion:'REVISAR',                     tipo:'Postergación reiterada — gestionar o cerrar' };
+const _sin_contacto        = { clas:'SIN_RESPUESTA',        estado:'SIN_RESPUESTA', accion:'SIN_RESPUESTA',               tipo:'Sin respuesta — reintentar contacto' };
+const _no_contactable      = { clas:'SIN_RESPUESTA',        estado:'NO_LLAMAR',     accion:'REVISAR',                     tipo:'No contactable NT118 — gestión de no contactabilidad' };
+const _en_gestion_nc       = { clas:'SIN_RESPUESTA',        estado:'NO_LLAMAR',     accion:'REVISAR',                     tipo:'En gestión no contactabilidad (carta/visita)' };
+const _seguimiento         = { clas:'CONTACTO_EFECTIVO',    estado:'SEGUIMIENTO',   accion:'LLAMAR_SEGUIMIENTO',          tipo:'Contacto efectivo — continuar seguimiento' };
+const _acompañamiento      = { clas:'CONTACTO_EFECTIVO',    estado:'SEGUIMIENTO',   accion:'LLAMAR_ACOMPAÑAMIENTO',       tipo:'Acepta acompañamiento — seguimiento activo' };
+const _posterga_1o2        = { clas:'CONTACTO_EFECTIVO',    estado:'SEGUIMIENTO',   accion:'LLAMAR_SEGUIMIENTO',          tipo:'Posterga oferta 1ª/2ª vez — reintentar' };
+const _posterga_3vez       = { clas:'CONTACTO_EFECTIVO',    estado:'SEGUIMIENTO',   accion:'LLAMAR_SEGUIMIENTO',          tipo:'Posterga oferta ×3 — mantener en lista, reintentar' };
+
+// ─── Reglas comunes de scripts de cierre/no-contacto (aplican a casi todas las actividades)
+// Se aplican vía lookup cruzado en buscarRegla() cuando la actividad no define su propio valor.
+const REGLAS_SCRIPT_GLOBAL = {
+  // Cierre definitivos
+  'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO':                     _cierre_fallecido,
+  'SEGUN REGISTROS FALLECIMIENTO DE USUARIO':                                    _cierre_fallecido,
+  'USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA':                  _cierre_rechazo_at,
+  'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO':                                      _cierre_rechazo_ac,
+  'USUARIO YA FUE ATENDIDO':                                                     _cierre_atendido,
+  'SEGUN REGISTROS USUARIO YA FUE ATENDIDO':                                     _cierre_atendido,
+  'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)':    _cierre_no_pertinencia,
+  'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)':                       _cierre_no_pertinencia,
+  'SEGUN REGISTROS NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)': _cierre_no_pertinencia,
+  'SEGUN REGISTROS NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)':       _cierre_no_pertinencia,
+  'USUARIO DECLARA SER BENEFICIARIO GES':                                        _cierre_ges,
+  'USUARIO DECLARA NO SER BENEFICIARIO':                                         _cierre_ges,
+  'SEGUN REGISTROS USUARIO BENEFICIARIO GES':                                    _cierre_ges,
+  'SEGUN REGISTROS USUARIO NO ES BENEFICIARIO':                                  _cierre_ges,
+  'SOLICITUD DE INDICACION DUPLICADA':                                           _cierre_duplicada,
+  'SEGUN REGISTROS SOLICITUD DE INDICACION DUPLICADA':                           _cierre_duplicada,
+  'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS':                         _cierre_inasistente,
+  'SEGUN REGISTROS USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS':         _cierre_inasistente,
+  'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD':                       _cierre_traslado,
+  'SEGUN REGISTROS USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD':       _cierre_traslado,
+  'SEGUN REGISTROS USUARIO CON SOLICITUD DE POSTERGACION REITERADA':             _cierre_posterg_reit,
+  // Sin contacto
+  'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO':                                _sin_contacto,
+  'SEGUN REGISTROS USUARIO NO CONTACTABLE (SEGUN NT118)':                        _no_contactable,
+  'SEGUN REGISTROS USUARIO EN GESTION DE LA NO CONTACTABILIDAD (CARTA O VISITA)': _en_gestion_nc,
+  // Postergaciones activas
+  'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':                          _posterga_1o2,
+  'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ':               _posterga_3vez,
+  // Desconoce solicitud
+  'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION':                             _seguimiento,
+  'USUARIO REFIERE DESCONOCER SOLICITUD DE ATENCION':                            _seguimiento,
+};
+
+// ─── Tabla por actividad — solo scripts específicos de esa actividad ──
+// Los scripts globales aplican automáticamente si no se sobreescriben aquí.
+const REGLAS = {
+
+  // ── SIN GESTION DE CONTACTABILIDAD ───────────────────────────────
+  'SIN GESTION DE CONTACTABILIDAD': {
+    'SIC GENERADA':                                              { clas:'CONTACTO_EFECTIVO',   estado:'SEGUIMIENTO',  accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'SIC generada — iniciar gestión de contacto' },
+    'SIC NO CREADA O NO ENCONTRADA':                             { clas:'SIN_REGISTRO',        estado:'REVISAR',      accion:'REVISAR',               tipo:'SIC no encontrada — revisar en sistema' },
+    'SEGUN REGISTROS USUARIO EN GESTION DE LA NO CONTACTABILIDAD (CARTA O VISITA)': _en_gestion_nc,
+    'SEGUN REGISTROS USUARIO POSTERGA ATENCION EN 1RA O 2DA OPORTUNIDAD':       _posterga_1o2,
+    'SEGUN REGISTROS USUARIO INASISTENTE EN 1 OPORTUNIDAD, SE DEBE GENERAR 2DO LLAMADO': _sin_contacto,
+    // Cierres registrales (via REGLAS_SCRIPT_GLOBAL)
+  },
+
+  // ── VINCULACION ───────────────────────────────────────────────────
+  'VINCULACION': {
+    'VIGENTE, REQUIERE PRESTACION':                              _acompañamiento,
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':        _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+    // Cierres y sin-contacto via REGLAS_SCRIPT_GLOBAL
+  },
+
+  // ── PRE-CONSULTA ──────────────────────────────────────────────────
+  'PRE-CONSULTA': {
+    'CONFIRMACION Y ACEPTACION ACOMPAÑAMIENTO':                  _acompañamiento,
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':        _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+    // Cierres y sin-contacto via REGLAS_SCRIPT_GLOBAL
+  },
+
+  // ── ACTUALIZACION DEL ESTADO ──────────────────────────────────────
+  // Actividad de seguimiento general — el script determina el cierre o continuidad
+  'ACTUALIZACION DEL ESTADO': {
+    'CONFIRMACION Y ACEPTACION ACOMPAÑAMIENTO':                  _acompañamiento,
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':        _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+    // Todos los cierres y sin-contacto via REGLAS_SCRIPT_GLOBAL
+    // IMPORTANTE: USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO → _cierre_rechazo_ac (NO_LLAMAR)
+    // IMPORTANTE: USUARIO YA FUE ATENDIDO → _cierre_atendido (NO_LLAMAR / verificar egreso)
+  },
+
+  // ── PREPARACION SOLICITUD EXAMENES ───────────────────────────────
+  'PREPARACION SOLICITUD EXAMENES': {
+    'SE SOLICITAN EXAMENES DE PREPARACION':                      { clas:'CONTACTO_EFECTIVO',  estado:'SEGUIMIENTO',  accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Exámenes solicitados — seguimiento hasta resultados' },
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':        _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+  },
+
+  // ── PREPARACION REVISION EXAMENES ────────────────────────────────
+  'PREPARACION REVISION EXAMENES': {
+    'REVISION DE SOLICITUD DE EXAMENES':                         { clas:'CONTACTO_EFECTIVO',  estado:'SEGUIMIENTO',  accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Revisión de exámenes realizada — seguimiento activo' },
+    'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_1 (SE REAGENDA)': { clas:'CONTACTO_EFECTIVO', estado:'SEGUIMIENTO', accion:'LLAMAR_SEGUIMIENTO', tipo:'Inasistente exámenes ×1 — reagendado' },
+    'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_2 (SE REAGENDA)': { clas:'CONTACTO_EFECTIVO', estado:'SEGUIMIENTO', accion:'LLAMAR_SEGUIMIENTO', tipo:'Inasistente exámenes ×2 — reagendado' },
+    'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_3 (SE INFORMA CASO A GESTION DE LA DDA)': _cierre_inasistente,
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':        _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+  },
+
+  // ── GESTION DE REPRIORIZACION Y AGENDA ───────────────────────────
+  'GESTION DE REPRIORIZACION Y AGENDA': {
+    'COORDINACION PARA LA REPRIORIZACION CLINICA Y AGENDA SEGUN OFERTA': { clas:'CONTACTO_EFECTIVO', estado:'SEGUIMIENTO', accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Repriorizacion y agenda coordinada — seguimiento activo' },
+    'USUARIO NO ASISTE A CITA DE CNE_1 (SE REAGENDA)':          { clas:'CONTACTO_EFECTIVO',  estado:'SEGUIMIENTO',  accion:'LLAMAR_SEGUIMIENTO', tipo:'Inasistente CNE ×1 — reagendado' },
+    'USUARIO NO ASISTE A CITA DE CNE_2 (SE REAGENDA)':          { clas:'CONTACTO_EFECTIVO',  estado:'SEGUIMIENTO',  accion:'LLAMAR_SEGUIMIENTO', tipo:'Inasistente CNE ×2 — reagendado' },
+    'USUARIO NO ASISTE A CITA DE CNE_3 (SE INFORMA CASO A GESTION DE LA DDA)': _cierre_inasistente,
+    'USUARIO POSTERGA OFERTA DE ATENCION CNE 1RA O 2DA VEZ':    _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION DE CONTROL ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+    'USUARIO POSTERGA OFERTA DE ATENCION DE CONTROL 1RA O 2DA VEZ': _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':        _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+  },
+
+  // ── GESTION DE CONFIRMACION DE CITA ──────────────────────────────
+  'GESTION DE CONFIRMACION DE CITA': {
+    'SE CONFIRMA ASISTENCIA A CITA':                             { clas:'CONTACTO_EFECTIVO',  estado:'SEGUIMIENTO',  accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Cita confirmada — seguimiento post-consulta' },
+    'SOLICITA CAMBIO DE CITA':                                   { clas:'CONTACTO_EFECTIVO',  estado:'SEGUIMIENTO',  accion:'LLAMAR_SEGUIMIENTO',    tipo:'Solicita cambio de cita — gestionar reagendamiento' },
+    'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ':        _posterga_1o2,
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': _posterga_3vez,
+  },
+
+  // ── POST ATENCION ─────────────────────────────────────────────────
+  // CLAVE: el usuario YA fue atendido. Aquí se documenta el resultado clínico.
+  // Scripts de continuidad → REQUIERE_ATENCION / SEGUIMIENTO activo.
+  // USUARIO YA FUE ATENDIDO en este contexto CONFIRMA la atención, no cierra.
+  // USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO en POST ATENCION = cierra seguimiento post.
+  'POST ATENCION': {
+    'GESTION DE INDICACIONES MEDICAS (POST ATENCION)':           { clas:'REQUIERE_ATENCION',  estado:'SEGUIMIENTO',  accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Gestión indicaciones médicas — seguimiento post-atención activo' },
+    'USUARIO YA FUE ATENDIDO':                                   { clas:'REQUIERE_ATENCION',  estado:'SEGUIMIENTO',  accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Atendido — seguimiento post-atención activo' },
+    'SEGUN REGISTROS USUARIO YA FUE ATENDIDO':                   { clas:'REQUIERE_ATENCION',  estado:'SEGUIMIENTO',  accion:'LLAMAR_ACOMPAÑAMIENTO', tipo:'Registros confirman atención — seguimiento post-atención' },
+    'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO':                    { clas:'REQUIERE_ATENCION',  estado:'NO_LLAMAR',    accion:'NO_LLAMAR',             tipo:'Rechaza seguimiento post-atención — cerrar acompañamiento' },
+    'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': { clas:'REQUIERE_ATENCION', estado:'SEGUIMIENTO', accion:'LLAMAR_SEGUIMIENTO', tipo:'Posterga seguimiento post-atención — reintentar' },
+    // Fallecido y sin-contacto aplican también en post-atención
+  },
+};
+
+// ─── Lookup principal: actividad + script → regla ─────────────────────
+// Prioridad: regla específica de actividad > regla global de script > fallback
+function buscarRegla(actividad, script, canal) {
+  if (!canal) return REGLA_DEFAULT_SIN_CANAL;
+
+  const tablaActividad = REGLAS[actividad];
+
+  // 1. Buscar regla específica de esta actividad
+  if (tablaActividad && tablaActividad[script]) {
+    return tablaActividad[script];
+  }
+
+  // 2. Buscar en reglas globales de script (cierres, sin-contacto, etc.)
+  if (REGLAS_SCRIPT_GLOBAL[script]) {
+    return REGLAS_SCRIPT_GLOBAL[script];
+  }
+
+  // 3. Fallback: si hay canal de contacto directo → contacto efectivo genérico
+  if (CANALES_CONTACTO_DIRECTO.has(canal)) return REGLA_SIN_SCRIPT_CONTACTO;
+
+  // 4. Sin registro reconocido
+  return { clas:'SIN_REGISTRO', estado:'REVISAR', accion:'REVISAR', tipo:`Combinación no registrada: ${actividad} / ${script}` };
+}
+
+function calcularCamposAuto() {
+  const actividad  = document.getElementById('f_actividad').value;
+  const script     = document.getElementById('f_script').value;
+  const canal      = document.getElementById('f_canal').value;
+  const hoy        = new Date();
+  const score      = window._scoreActual || { clinico:0, social:0, complejidad:'BAJA', dias:180 };
+
+  const regla = buscarRegla(actividad, script, canal);
+  const { clas: clasificacion, estado: estadoInterno, accion: accionBase, tipo: tipoDesc } = regla;
+
+  // ¿Debe programarse próximo contacto?
+  const sinProxContacto = (estadoInterno === 'NO_LLAMAR' || clasificacion === 'EGRESO_SIC' || clasificacion === 'FALLECIDO');
+  const proxFecha = sinProxContacto ? null : addDias(hoy, score.dias);
+
+  // Estado de seguimiento para lista de trabajo
+  let estadoSeg = '';
+  if (sinProxContacto) {
+    estadoSeg = 'NO LLAMAR';
+  } else if (estadoInterno === 'SIN_RESPUESTA') {
+    estadoSeg = 'PENDIENTE'; // reintentar
+  } else if (!proxFecha) {
+    estadoSeg = 'REVISAR';
+  } else {
+    const diff = Math.floor((proxFecha - hoy) / 86400000);
+    if (diff < 0)       estadoSeg = 'VENCIDO';
+    else if (diff === 0) estadoSeg = 'HOY';
+    else if (diff <= 7)  estadoSeg = 'PLANIFICADO_PROX_7_DIAS';
+    else                estadoSeg = 'PROGRAMADO_A_FUTURO';
+  }
+
+  // Acción hoy para navegador
+  let accionHoy = accionBase;
+  if (estadoSeg === 'NO LLAMAR')             accionHoy = 'NO_LLAMAR';
+  else if (estadoSeg === 'VENCIDO')          accionHoy = accionBase === 'REVISAR' ? 'REVISAR' : 'LLAMAR_HOY_URGENTE';
+  else if (estadoSeg === 'HOY')              accionHoy = accionBase === 'REVISAR' ? 'REVISAR' : 'LLAMAR_HOY';
+  else if (estadoSeg === 'PENDIENTE')        accionHoy = 'SIN_RESPUESTA';
+  else if (estadoSeg !== 'PROGRAMADO_A_FUTURO') accionHoy = accionBase;
+  else                                       accionHoy = 'NO_LLAMAR'; // programado a futuro, no tocar hoy
+
+  // Tipo llamado (categoría Minsal)
+  const tieneHistorial = currentCaso && (currentCaso.gestiones?.length > 0 ||
+    getGestiones().some(g => g.Caso_ID === currentCaso?.id));
+  let tipoLlamado = '';
+  if (sinProxContacto) {
+    tipoLlamado = 'NO_LLAMAR';
+  } else if (actividad === 'POST ATENCION') {
+    tipoLlamado = tieneHistorial ? 'POST_ATENCION_SEGUIMIENTO' : 'POST_ATENCION_INICIAL';
+  } else if (clasificacion === 'NO_REQUIERE_ATENCION' && estadoInterno === 'SEGUIMIENTO') {
+    // Caso descubierto como ya atendido en actividad pre-atención → próxima gestión es POST ATENCION
+    tipoLlamado = 'POST_ATENCION_INICIAL';
+  } else if (!tieneHistorial) {
+    tipoLlamado = 'PRIMER_CONTACTO';
+  } else {
+    tipoLlamado = 'LLAMADA_SEGUIMIENTO';
+  }
+
+  // Prioridad (incorpora score social como factor)
+  let prioridad;
+  if (estadoSeg === 'NO LLAMAR') { prioridad = 'NO LLAMAR'; }
+  else {
+    const baseMap = { VENCIDO:1, HOY:2, PENDIENTE:3, PLANIFICADO_PROX_7_DIAS:5, PROGRAMADO_A_FUTURO:9 };
+    const base = baseMap[estadoSeg] || 5;
+    prioridad = Math.max(1, base - score.social); // social baja el número = sube la prioridad
+  }
+
+  // Actualizar UI
+  setAuto('clasificacion', clasificacion);
+  setAuto('estado_seg', estadoSeg);
+  setAuto('accion_hoy', accionHoy);
+  setAuto('tipo_llamado', tipoLlamado);
+  setAuto('tipo_desc', tipoDesc);
+  setAuto('prioridad', String(prioridad));
+  setAuto('proxima', proxFecha ? proxFecha.toISOString().split('T')[0] : '—');
+
+  setValue('f_clasificacion', clasificacion);
+  setValue('f_estado_seg', estadoSeg);
+  setValue('f_accion_hoy', accionHoy);
+  setValue('f_tipo_llamado', tipoLlamado);
+  setValue('f_prioridad_contacto', String(prioridad));
+  setValue('f_proxima', proxFecha ? proxFecha.toISOString().split('T')[0] : '');
+}
+
+function setAuto(id, val) {
+  const el = document.getElementById('auto_'+id);
+  if (el) el.textContent = val || '—';
+}
+function setValue(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+function addDias(fecha, n) {
+  const d = new Date(fecha);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+// ══ CANAL → CAMPOS CONDICIONALES ══════════════════════════════════
+function onCanalChange() {
+  const canal     = document.getElementById('f_canal').value;
+  const esContacto = CANALES_CONTACTO_DIRECTO.has(canal);
+  const esIndirecto = canal && !esContacto;
+  document.getElementById('clinicosBox').hidden = !esContacto;
+  document.getElementById('nspBox').hidden      = !esIndirecto;
+  calcularScore();
+}
+
+// ══ SUBMIT ════════════════════════════════════════════════════════
+async function submitGestion(e) {
+  e.preventDefault();
+  const actividad = document.getElementById('f_actividad').value;
+  const script    = document.getElementById('f_script').value;
+  const postAt    = document.getElementById('f_post_atencion').value;
+
+  if (!script) { showToast('Debe seleccionar un Script Detalle','err'); return; }
+  if (actividad === 'POST ATENCION' && !postAt) { showToast('POST ATENCION requiere seleccionar COL81','err'); return; }
+
+  const score = window._scoreActual || {};
+
+  const payload = {
+    Caso_ID:              currentCaso?.id || '',
+    Fecha_Gestion:        document.getElementById('f_fecha').value,
+    Navegador_Asignado:   document.getElementById('f_navegador').value,
+    Actividad_Navegador:  actividad,
+    Script_Detalle:       script,
+    Post_Atencion_COL81:  postAt || null,
+    Canal:                document.getElementById('f_canal').value,
+    Clasificacion_Respuesta: document.getElementById('f_clasificacion').value,
+    Estado_Seguimiento:   document.getElementById('f_estado_seg').value,
+    Accion_Hoy:           document.getElementById('f_accion_hoy').value,
+    Tipo_Llamado:         document.getElementById('f_tipo_llamado').value,
+    Prioridad_Contacto:   document.getElementById('f_prioridad_contacto').value,
+    Gestion_Estado:       document.getElementById('f_gestion').value,
+    Egresar_SIC:          document.getElementById('f_egresar_sic').value,
+    Rechaza_Atencion:     document.getElementById('f_rechaza').value,
+    Fecha_Proximo:        document.getElementById('f_proxima').value || null,
+    Motivo_NSP:           document.getElementById('f_motivo_nsp').value,
+    Urgencia_Reciente:    document.getElementById('f_urgencia').value,
+    Hospitalizado:        document.getElementById('f_hospitalizado').value,
+    Sintomatologia:       document.getElementById('f_sintomas').value,
+    Observacion:          document.getElementById('f_observacion').value,
+    // Score calculado
+    Score_Clinico:        score.clinico,
+    Score_Social:         score.social,
+    Complejidad:          score.complejidad,
+    // Perfil
+    Perfil_Fecha_Nac:     document.getElementById('p_fecha_nac').value,
+    Perfil_Acompaniamiento: document.getElementById('p_acompaniamiento').value,
+    Perfil_Citado:        document.getElementById('p_citado').value,
+    Perfil_NSP_Previo:    document.getElementById('p_nsp_previo').value,
+    Perfil_Barreras:      document.getElementById('p_barreras').value,
+    Perfil_Donde_Vive:    document.getElementById('p_donde_vive').value,
+    Perfil_Acceso_HPM:    document.getElementById('p_acceso').value,
+    Perfil_Transporte:    document.getElementById('p_transporte').value,
+    Perfil_Prevision:     document.getElementById('p_prevision').value,
+    Perfil_Red_Apoyo:     document.getElementById('p_red').value,
+    Perfil_Dependencia:   document.getElementById('p_dependencia').value,
+    Perfil_Discapacidad:  document.getElementById('p_nivel_discapacidad').value,
+    Perfil_ECICEP:        document.getElementById('p_ecicep').value,
+    Perfil_PRAIS:         document.getElementById('p_prais').value,
+    Perfil_Institucionalizado: document.getElementById('p_institucionalizado').value,
+    Perfil_Cuidador:      document.getElementById('p_cuidador').value,
+    Perfil_Modificado:    perfilModificado,
+    _ts: new Date().toISOString()
+  };
+
+  // Guardar gestión en Firestore
+  const ok = await saveGestion(payload);
+
+  // Si hay caso para actualizar (perfil modificado o nueva fecha próxima)
+  if (currentCaso && (perfilModificado || payload.Fecha_Proximo)) {
+    const casos = await getCasos();
+    const idx   = casos.findIndex(c => c.id === currentCaso.id);
+    if (idx >= 0) {
+      if (perfilModificado) {
+        casos[idx].perfil = {
+          ...casos[idx].perfil,
+          fecha_nac: payload.Perfil_Fecha_Nac,
+          acompaniamiento: payload.Perfil_Acompaniamiento,
+          acceso: payload.Perfil_Acceso_HPM,
+          red: payload.Perfil_Red_Apoyo,
+          dependencia: payload.Perfil_Dependencia,
+          nivel_discapacidad: payload.Perfil_Discapacidad,
+          ecicep: payload.Perfil_ECICEP,
+          prais: payload.Perfil_PRAIS,
+          institucionalizado: payload.Perfil_Institucionalizado,
+          cuidador: payload.Perfil_Cuidador,
+          donde_vive: payload.Perfil_Donde_Vive,
+          transporte: payload.Perfil_Transporte,
+          prevision: payload.Perfil_Prevision
+        };
+      }
+      if (payload.Fecha_Proximo) {
+        const hoy = new Date().toISOString().split('T')[0];
+        const nf  = payload.Fecha_Proximo;
+        casos[idx].proxima = nf;
+        casos[idx].estado  = nf < hoy ? 'VENCIDO' : nf === hoy ? 'HOY' : 'PROGRAMADO';
+      }
+      casos[idx].scoreClinico = score.clinico;
+      await saveCaso(casos[idx]);
+    }
+  }
+
+  if (ok) {
+    if (perfilModificado) showToast('Perfil actualizado ✓', 'ok');
+    // Guardar snapshot del caso antes de cerrar el drawer
+    _confirmCasoSnapshot = currentCaso ? { ...currentCaso } : null;
+    // Cerrar drawer silenciosamente (sin renderBandeja aún)
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+    currentCaso = null;
+    // Calcular sugerencias y mostrar modal
+    const sugerencias = sugerirSiguienteActividad(actividad, script, payload.Clasificacion_Respuesta);
+    mostrarConfirmModal(sugerencias, actividad, script);
+  } else {
+    showToast('Error al guardar en Firebase. Revisa tu conexión.','err');
+  }
+}
+
+// ══ VISTAS ════════════════════════════════════════════════════════
+function showView(v, btn) {
+  ['bandeja','casos','dashboard'].forEach(n => document.getElementById('view-'+n).hidden = (n !== v));
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+// ══ TEMA ══════════════════════════════════════════════════════════
+function toggleTheme() {
+  const r = document.documentElement;
+  const c = r.getAttribute('data-theme');
+  r.setAttribute('data-theme', c === 'dark' ? 'light' : 'dark');
+  try { localStorage.setItem('nav-theme', r.getAttribute('data-theme')); } catch {}
+}
+try { const s = localStorage.getItem('nav-theme'); if (s) document.documentElement.setAttribute('data-theme', s); } catch {}
+
+// ══ TOAST ══════════════════════════════════════════════════════════
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast' + (type ? ' ' + type : '') + ' show';
+  setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+</script>
+<!-- MODAL CONFIRMACIÓN POST-GUARDADO (Opción B) -->
+<div class="confirm-overlay" id="confirmOverlay" hidden>
+  <div class="confirm-modal">
+    <div class="confirm-modal-header">
+      <div class="confirm-saved-badge">✓ Gestión guardada</div>
+      <div class="confirm-modal-title" id="confirmTitle">¿Continuar en esta llamada?</div>
+      <div class="confirm-modal-sub" id="confirmSub"></div>
+    </div>
+    <div class="confirm-modal-body" id="confirmBody">
+      <div class="confirm-modal-label" id="confirmChipsLabel">Acción sugerida en esta llamada</div>
+      <div class="confirm-chips" id="confirmChips"></div>
+    </div>
+    <div class="confirm-modal-footer">
+      <button class="confirm-btn-close" onclick="cerrarConfirmModal()">Cerrar y volver a bandeja</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ TABLA MAESTRA DE CONTINUIDAD ══════════════════════════════════
+// Para cada script, define:
+//   categoria: 'CONTINUIDAD' | 'CIERRE' | 'SIN_CONTACTO' | 'ESPERA'
+//   etiqueta:  texto corto para el navegador
+//   siguiente: array de chips sugeridos { icon, actividad, script, desc }
+//              vacío = no hay acción siguiente en la misma llamada
+//
+// Esta tabla es la fuente única de verdad para chips Y para la
+// tabla de validación que se muestra en el modal.
+
+const TABLA_CONTINUIDAD = {
+  // ── CONTINUIDAD HACIA POST ATENCION ──────────────────────────────
+  'USUARIO YA FUE ATENDIDO': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Atendido → POST ATENCION',
+    siguiente: [{
+      icon: '🏥', actividad: 'POST ATENCION', script: 'USUARIO YA FUE ATENDIDO',
+      desc: 'Registrar seguimiento post-atención en esta misma llamada'
+    }]
+  },
+  'SEGUN REGISTROS USUARIO YA FUE ATENDIDO': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Registros: atendido → POST ATENCION',
+    siguiente: [{
+      icon: '🏥', actividad: 'POST ATENCION', script: 'SEGUN REGISTROS USUARIO YA FUE ATENDIDO',
+      desc: 'Registrar seguimiento post-atención (confirmado por registros)'
+    }]
+  },
+
+  // ── CONTINUIDAD: ACOMPAÑAMIENTO ACTIVO ───────────────────────────
+  'CONFIRMACION Y ACEPTACION ACOMPAÑAMIENTO': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Acepta acompañamiento → seguir',
+    siguiente: [] // misma actividad, siguiente llamada programada
+  },
+  'VIGENTE, REQUIERE PRESTACION': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Vigente → continuar acompañamiento',
+    siguiente: []
+  },
+  'COORDINACION PARA LA REPRIORIZACION CLINICA Y AGENDA SEGUN OFERTA': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Agenda coordinada → confirmar cita',
+    siguiente: [{
+      icon: '📅', actividad: 'GESTION DE CONFIRMACION DE CITA', script: 'SE CONFIRMA ASISTENCIA A CITA',
+      desc: 'Confirmar asistencia a la cita coordinada en esta misma llamada'
+    }]
+  },
+  'SE CONFIRMA ASISTENCIA A CITA': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Cita confirmada → seguimiento',
+    siguiente: []
+  },
+  'SOLICITA CAMBIO DE CITA': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Solicita cambio → gestionar',
+    siguiente: [{
+      icon: '🔄', actividad: 'GESTION DE REPRIORIZACION Y AGENDA',
+      script: 'COORDINACION PARA LA REPRIORIZACION CLINICA Y AGENDA SEGUN OFERTA',
+      desc: 'Gestionar nuevo agendamiento en esta misma llamada'
+    }]
+  },
+  'SE SOLICITAN EXAMENES DE PREPARACION': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Exámenes solicitados → revisar resultados',
+    siguiente: []
+  },
+  'REVISION DE SOLICITUD DE EXAMENES': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Exámenes revisados → gestionar agenda',
+    siguiente: [{
+      icon: '📅', actividad: 'GESTION DE REPRIORIZACION Y AGENDA',
+      script: 'COORDINACION PARA LA REPRIORIZACION CLINICA Y AGENDA SEGUN OFERTA',
+      desc: 'Gestionar agenda post-exámenes en esta misma llamada'
+    }]
+  },
+  'GESTION DE INDICACIONES MEDICAS (POST ATENCION)': {
+    categoria: 'CONTINUIDAD',
+    etiqueta: 'Post-atención activa',
+    siguiente: []
+  },
+
+  // ── ESPERA / POSTERGACIÓN ─────────────────────────────────────────
+  'USUARIO POSTERGA OFERTA DE ATENCION 1RA O 2DA VEZ': {
+    categoria: 'ESPERA',
+    etiqueta: 'Posterga 1ª/2ª vez → reintentar',
+    siguiente: []
+  },
+  'USUARIO POSTERGA OFERTA DE ATENCION ENTREGADA POR TERCERA VEZ': {
+    categoria: 'ESPERA',
+    etiqueta: 'Posterga ×3 → mantener, reintentar',
+    siguiente: []
+  },
+  'USUARIO INASISTENTE EN 1 OPORTUNIDAD, SE DEBE GENERAR 2DO LLAMADO': {
+    categoria: 'ESPERA',
+    etiqueta: 'Inasistente 1ª vez → 2do llamado',
+    siguiente: []
+  },
+  'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_1 (SE REAGENDA)': {
+    categoria: 'ESPERA', etiqueta: 'NSP exámenes 1ª vez → reagendar', siguiente: []
+  },
+  'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_2 (SE REAGENDA)': {
+    categoria: 'ESPERA', etiqueta: 'NSP exámenes 2ª vez → reagendar', siguiente: []
+  },
+  'USUARIO NO ASISTE A CITA DE TOMA DE EXAMENES_3 (SE INFORMA CASO A GESTION DE LA DDA)': {
+    categoria: 'ESPERA', etiqueta: 'NSP exámenes 3ª vez → informar DDA', siguiente: []
+  },
+  'USUARIO NO ASISTE A CITA DE CNE_1 (SE REAGENDA)': {
+    categoria: 'ESPERA', etiqueta: 'NSP CNE 1ª vez → reagendar', siguiente: []
+  },
+  'USUARIO NO ASISTE A CITA DE CNE_2 (SE REAGENDA)': {
+    categoria: 'ESPERA', etiqueta: 'NSP CNE 2ª vez → reagendar', siguiente: []
+  },
+  'USUARIO NO ASISTE A CITA DE CNE_3 (SE INFORMA CASO A GESTION DE LA DDA)': {
+    categoria: 'ESPERA', etiqueta: 'NSP CNE 3ª vez → informar DDA', siguiente: []
+  },
+  'USUARO REFIERE DESCONOCER SOLICITUD DE ATENCION': {
+    categoria: 'ESPERA', etiqueta: 'Desconoce solicitud → orientar', siguiente: []
+  },
+  'USUARIO REFIERE DESCONOCER SOLICITUD DE ATENCION': {
+    categoria: 'ESPERA', etiqueta: 'Desconoce solicitud → orientar', siguiente: []
+  },
+
+  // ── SIN CONTACTO ──────────────────────────────────────────────────
+  'NO SE LOGRA CONTACTO CON USUARIO POR LLAMADO': {
+    categoria: 'SIN_CONTACTO',
+    etiqueta: 'Sin respuesta → reintentar',
+    siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO NO CONTACTABLE (SEGUN NT118)': {
+    categoria: 'SIN_CONTACTO',
+    etiqueta: 'No contactable NT118 → gestionar',
+    siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO EN GESTION DE LA NO CONTACTABILIDAD (CARTA O VISITA)': {
+    categoria: 'SIN_CONTACTO',
+    etiqueta: 'En gestión no contactabilidad',
+    siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO POSTERGA ATENCION EN 1RA O 2DA OPORTUNIDAD': {
+    categoria: 'ESPERA', etiqueta: 'Registros: posterga → reintentar', siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO INASISTENTE EN 1 OPORTUNIDAD, SE DEBE GENERAR 2DO LLAMADO': {
+    categoria: 'SIN_CONTACTO', etiqueta: 'Registros: inasistente → 2do llamado', siguiente: []
+  },
+
+  // ── CIERRES DEFINITIVOS ───────────────────────────────────────────
+  'AL CONTACTO SE NOS INFORMA DE FALLECIMIENTO DE USUARIO': {
+    categoria: 'CIERRE', etiqueta: 'Fallecido — cerrar caso', siguiente: []
+  },
+  'SEGUN REGISTROS FALLECIMIENTO DE USUARIO': {
+    categoria: 'CIERRE', etiqueta: 'Registros: fallecido — cerrar', siguiente: []
+  },
+  'USUARIO DECLARA RECHAZO DE LA ATENCION DE FORMA DEFINITIVA': {
+    categoria: 'CIERRE', etiqueta: 'Rechazo atención definitivo — cerrar', siguiente: []
+  },
+  'USUARIO DECLARA RECHAZO ACOMPAÑAMIENTO': {
+    categoria: 'CIERRE', etiqueta: 'Rechaza acompañamiento — cerrar', siguiente: []
+  },
+  'SOLICITUD DE INDICACION DUPLICADA': {
+    categoria: 'CIERRE', etiqueta: 'Indicación duplicada — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS SOLICITUD DE INDICACION DUPLICADA': {
+    categoria: 'CIERRE', etiqueta: 'Registros: duplicada — cerrar', siguiente: []
+  },
+  'USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS': {
+    categoria: 'CIERRE', etiqueta: 'Inasistente ×2 consecutivas — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO INASISTENTE EN 2 OPORTUNIDADES CONSECUTIVAS': {
+    categoria: 'CIERRE', etiqueta: 'Registros: inasistente ×2 — cerrar', siguiente: []
+  },
+  'USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD': {
+    categoria: 'CIERRE', etiqueta: 'Traslado establecimiento — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO SOLICITA TRASLADO DE ESTABLECIMIENTO DE SALUD': {
+    categoria: 'CIERRE', etiqueta: 'Registros: traslado — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO CON SOLICITUD DE POSTERGACION REITERADA': {
+    categoria: 'CIERRE', etiqueta: 'Postergación reiterada — gestionar o cerrar', siguiente: []
+  },
+  'USUARIO DECLARA SER BENEFICIARIO GES': {
+    categoria: 'CIERRE', etiqueta: 'Beneficiario GES — cerrar', siguiente: []
+  },
+  'USUARIO DECLARA NO SER BENEFICIARIO': {
+    categoria: 'CIERRE', etiqueta: 'No beneficiario — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO BENEFICIARIO GES': {
+    categoria: 'CIERRE', etiqueta: 'Registros: GES — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS USUARIO NO ES BENEFICIARIO': {
+    categoria: 'CIERRE', etiqueta: 'Registros: no beneficiario — cerrar', siguiente: []
+  },
+  'NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)': {
+    categoria: 'CIERRE', etiqueta: 'Pérdida indicación — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS NO CORRESPONDE REALIZAR LA ATENCION (PERDIDA DE INDICACION DE ATENCION)': {
+    categoria: 'CIERRE', etiqueta: 'Registros: pérdida indicación — cerrar', siguiente: []
+  },
+  'NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)': {
+    categoria: 'CIERRE', etiqueta: 'No pertinencia — cerrar', siguiente: []
+  },
+  'SEGUN REGISTROS NO PERTINENCIA (CRITERIOS ADMINISTRATIVOS O CLINICOS)': {
+    categoria: 'CIERRE', etiqueta: 'Registros: no pertinencia — cerrar', siguiente: []
+  },
+  // SIN GESTION especiales
+  'SIC GENERADA': {
+    categoria: 'CONTINUIDAD', etiqueta: 'SIC generada → iniciar contacto', siguiente: []
+  },
+  'SIC NO CREADA O NO ENCONTRADA': {
+    categoria: 'CIERRE', etiqueta: 'SIC no encontrada → revisar sistema', siguiente: []
+  },
+};
+
+// Orden de categorías para la tabla de validación
+const ORDEN_CATEGORIA = ['CONTINUIDAD','ESPERA','SIN_CONTACTO','CIERRE'];
+const LABEL_CATEGORIA = {
+  CONTINUIDAD:  '✅ Continuidad / Seguimiento activo',
+  ESPERA:       '⏳ En espera o postergación',
+  SIN_CONTACTO: '📵 Sin contacto',
+  CIERRE:       '🔒 Cierre de caso',
+};
+const COLOR_CATEGORIA = {
+  CONTINUIDAD:  'var(--green)',
+  ESPERA:       'var(--orange)',
+  SIN_CONTACTO: 'var(--purple)',
+  CIERRE:       'var(--red)',
+};
+
+function sugerirSiguienteActividad(actividad, script) {
+  // POST ATENCION: nunca sugerir más
+  if (actividad === 'POST ATENCION') return [];
+  const entrada = TABLA_CONTINUIDAD[script];
+  if (!entrada) return [];
+  // Solo mostrar chips si hay continuidad real hacia otra gestión en la misma llamada
+  return entrada.siguiente || [];
+}
+
+// ══ MODAL CONFIRM ════════════════════════════════════════════════
+let _confirmCasoSnapshot = null; // mantiene referencia al caso durante el modal
+
+function mostrarConfirmModal(sugerencias, actividad, script) {
+  const overlay = document.getElementById('confirmOverlay');
+  const chips   = document.getElementById('confirmChips');
+  const body    = document.getElementById('confirmBody');
+  const title   = document.getElementById('confirmTitle');
+  const sub     = document.getElementById('confirmSub');
+
+  chips.innerHTML = '';
+
+  // Siempre mostramos el modal (para incluir tabla de validación)
+  overlay.hidden = false;
+  body.hidden = false;
+
+  if (sugerencias.length === 0) {
+    title.textContent = 'Gestión registrada ✓';
+    sub.textContent = actividad + (script ? ' · ' + script : '');
+    // Sin chips de acción — solo tabla de referencia
+    document.getElementById('confirmChipsLabel') && (document.getElementById('confirmChipsLabel').hidden = true);
+  } else {
+    title.textContent = '¿Continuar en esta llamada?';
+    sub.textContent = actividad + ' · ' + script + ' registrado';
+
+    // Mostrar label de chips si existe
+    const lbl = document.getElementById('confirmChipsLabel');
+    if (lbl) lbl.hidden = false;
+
+    sugerencias.forEach(s => {
+      const chip = document.createElement('button');
+      chip.className = 'confirm-chip';
+      chip.type = 'button';
+      chip.innerHTML = `
+        <span class="confirm-chip-icon">${s.icon}</span>
+        <span class="confirm-chip-text">
+          <span class="confirm-chip-act">${s.actividad}</span>
+          <span class="confirm-chip-desc">${s.desc}</span>
+        </span>
+        <span class="confirm-chip-arrow">›</span>`;
+      chip.onclick = () => abrirGestionConActividad(s.actividad, s.script);
+      chips.appendChild(chip);
+    });
+  }
+
+  // ── Tabla de validación: todos los scripts por categoría ──────────────
+  let tablaEl = document.getElementById('confirmTablaValidacion');
+  if (!tablaEl) {
+    tablaEl = document.createElement('div');
+    tablaEl.id = 'confirmTablaValidacion';
+    body.appendChild(tablaEl);
+  }
+  tablaEl.innerHTML = '';
+
+  // Encabezado colapsable
+  const tablaToggle = document.createElement('button');
+  tablaToggle.className = 'confirm-tabla-toggle';
+  tablaToggle.type = 'button';
+  tablaToggle.innerHTML = '📋 Ver tabla de continuidad por categoría <span class="confirm-tabla-arrow">▼</span>';
+  tablaEl.appendChild(tablaToggle);
+
+  const tablaContent = document.createElement('div');
+  tablaContent.className = 'confirm-tabla-content';
+  tablaContent.hidden = true;
+  tablaEl.appendChild(tablaContent);
+
+  tablaToggle.onclick = () => {
+    tablaContent.hidden = !tablaContent.hidden;
+    tablaToggle.querySelector('.confirm-tabla-arrow').textContent = tablaContent.hidden ? '▼' : '▲';
+  };
+
+  // Renderizar por categoría
+  ORDEN_CATEGORIA.forEach(cat => {
+    const entries = Object.entries(TABLA_CONTINUIDAD).filter(([, v]) => v.categoria === cat);
+    if (!entries.length) return;
+
+    const seccion = document.createElement('div');
+    seccion.className = 'confirm-tabla-seccion';
+
+    const catColor = COLOR_CATEGORIA[cat] || 'var(--text2)';
+    const catLabel = LABEL_CATEGORIA[cat] || cat;
+
+    seccion.innerHTML = `<div class="confirm-tabla-cat" style="color:${catColor}">${catLabel}</div>`;
+
+    entries.forEach(([scriptName, data]) => {
+      const row = document.createElement('div');
+      row.className = 'confirm-tabla-row' + (scriptName === script ? ' confirm-tabla-row--actual' : '');
+
+      // Chips de siguiente acción inline
+      const nextHtml = data.siguiente && data.siguiente.length
+        ? data.siguiente.map(s => `<span class="confirm-tabla-next">${s.icon} ${s.actividad}</span>`).join('')
+        : '<span class="confirm-tabla-next confirm-tabla-next--none">Sin acción inmediata</span>';
+
+      row.innerHTML = `
+        <div class="confirm-tabla-etiqueta">${data.etiqueta}</div>
+        <div class="confirm-tabla-script">${scriptName}</div>
+        <div class="confirm-tabla-nexts">${nextHtml}</div>`;
+      seccion.appendChild(row);
+    });
+
+    tablaContent.appendChild(seccion);
+  });
+}
+
+function cerrarConfirmModal() {
+  document.getElementById('confirmOverlay').hidden = true;
+  _confirmCasoSnapshot = null;
+  renderBandeja();
+}
+
+function abrirGestionConActividad(actividad, scriptSugerido) {
+  // Cierra modal
+  document.getElementById('confirmOverlay').hidden = true;
+
+  // El drawer ya está abierto (closeDrawer lo cerró, pero currentCaso fue guardado)
+  // Reabre el drawer con el mismo caso
+  if (_confirmCasoSnapshot) {
+    openDrawer(_confirmCasoSnapshot);
+    // Espera a que el DOM esté listo y pre-selecciona actividad
+    setTimeout(() => {
+      const selAct = document.getElementById('f_actividad');
+      if (selAct) {
+        selAct.value = actividad;
+        selAct.dispatchEvent(new Event('change'));
+        // Intenta pre-seleccionar el script tras un ciclo más
+        setTimeout(() => {
+          const selScript = document.getElementById('f_script');
+          if (selScript && scriptSugerido) {
+            // Busca la opción más cercana al script sugerido
+            const opts = Array.from(selScript.options);
+            const match = opts.find(o => o.value === scriptSugerido);
+            if (match) {
+              selScript.value = scriptSugerido;
+              selScript.dispatchEvent(new Event('change'));
+            }
+          }
+        }, 100);
+      }
+    }, 50);
+  } else {
+    renderBandeja();
+  }
+}
+</script>
+</body>
+</html>
