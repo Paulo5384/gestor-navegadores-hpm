@@ -259,6 +259,52 @@ textarea.field-control{resize:vertical;min-height:72px;}
 .ls-counter{font-size:11px;color:var(--text3);background:var(--surface2);border-radius:var(--radius-sm);padding:2px 7px;font-variant-numeric:tabular-nums;}
 
 @media(max-width:600px){.sidebar{display:none;}.content{padding:16px;}.filter-row .filter-btn{font-size:11px;padding:4px 8px;}}
+
+/* ══ ADMIN MODULE ══════════════════════════════════════════════════ */
+.admin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:18px;overflow:hidden;}
+.admin-card-header{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.admin-card-icon{font-size:26px;line-height:1;flex-shrink:0;}
+.admin-card-title{font-weight:700;font-size:15px;color:var(--text);}
+.admin-card-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.admin-card-body{padding:20px;}
+
+.admin-upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:background .15s,border-color .15s;}
+.admin-upload-zone:hover{background:var(--surface2);border-color:var(--accent);}
+.admin-upload-zone.drag-over{background:color-mix(in srgb, var(--accent) 10%, var(--surface));border-color:var(--accent);}
+.admin-upload-icon{font-size:32px;margin-bottom:8px;}
+.admin-upload-label{font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px;}
+.admin-upload-hint{font-size:11px;color:var(--text3);}
+
+.admin-preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.admin-filename{font-size:13px;font-weight:600;color:var(--accent);}
+.admin-btn-clear{background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:2px 6px;}
+.admin-btn-clear:hover{color:var(--red);}
+
+.admin-stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.admin-stat{background:var(--surface2);border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;}
+.admin-stat-val{font-size:20px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.1;}
+.admin-stat-lbl{color:var(--text3);margin-top:2px;}
+
+.admin-warn-box{border:1px solid var(--red);background:var(--red-bg);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:14px;}
+
+.admin-btn-import{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.admin-btn-import:disabled{opacity:.45;cursor:not-allowed;}
+.admin-btn-import:not(:disabled):hover{opacity:.88;}
+
+.admin-progress{margin-top:16px;}
+.admin-progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.admin-progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s;}
+.admin-progress-label{font-size:12px;color:var(--text3);}
+
+.admin-export-filters{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
+.admin-export-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.admin-export-label{font-size:12px;font-weight:600;color:var(--text2);min-width:110px;}
+.admin-export-inputs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.admin-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:13px;color:var(--text);outline:none;}
+.admin-input:focus{border-color:var(--accent);}
+.admin-btn-export{width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.admin-btn-export:hover{opacity:.88;}
+.admin-export-status{margin-top:10px;font-size:12px;color:var(--text3);text-align:center;}
 </style>
 </head>
 <body>
@@ -296,6 +342,7 @@ textarea.field-control{resize:vertical;min-height:72px;}
       <button class="sidebar-item active" onclick="showView('bandeja',this)">📋 Bandeja</button>
       <button class="sidebar-item" onclick="showView('casos',this)">👤 Casos</button>
       <button class="sidebar-item" onclick="showView('dashboard',this)">📊 Dashboard</button>
+      <button class="sidebar-item" id="sidebarAdmin" onclick="showView('admin',this)" hidden>⚙️ Admin</button>
     </nav>
     <main class="content">
       <div id="view-bandeja">
@@ -321,6 +368,156 @@ textarea.field-control{resize:vertical;min-height:72px;}
         <div style="font-weight:600">Dashboard</div>
         <div style="font-size:13px;margin-top:6px">Próximamente — KPIs semanales MINSAL</div>
       </div>
+
+      <!-- ══ VISTA ADMIN ══════════════════════════════════════════ -->
+      <div id="view-admin" hidden>
+        <div class="content-header">
+          <h1 class="content-title">⚙️ Administración</h1>
+          <span style="font-size:12px;color:var(--text3);align-self:center">Solo coordinador</span>
+        </div>
+
+        <!-- ── PANEL 1: CARGAR CAMPAÑA ── -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-icon">📥</div>
+            <div>
+              <div class="admin-card-title">Cargar campaña nueva</div>
+              <div class="admin-card-sub">Importa un bloque CONSOLIDADO CAMPAÑA desde Excel (.xlsx)</div>
+            </div>
+          </div>
+          <div class="admin-card-body">
+            <div class="admin-upload-zone" id="campanaZone" onclick="document.getElementById('campanaFile').click()">
+              <div class="admin-upload-icon">📂</div>
+              <div class="admin-upload-label">Haz clic o arrastra el archivo CONSOLIDADO CAMPAÑA</div>
+              <div class="admin-upload-hint">Formato: .xlsx — columnas RUT_ESPECIALIDAD_SIGTE, NOMBRES, ESPECIALIDAD, F_ENTRADA, ESTADO…</div>
+              <input type="file" id="campanaFile" accept=".xlsx" hidden onchange="onCampanaFileSelected(event)">
+            </div>
+            <div id="campanaPreview" hidden>
+              <div class="admin-preview-header">
+                <span id="campanaFilename" class="admin-filename"></span>
+                <button class="admin-btn-clear" onclick="clearCampana()">✕ Limpiar</button>
+              </div>
+              <div id="campanaStats" class="admin-stats-row"></div>
+              <div id="campanaDuplicados" class="admin-warn-box" hidden></div>
+              <button class="admin-btn-import" id="campanaImportBtn" onclick="importarCampana()" disabled>
+                ⬆️ Importar a Firebase
+              </button>
+            </div>
+            <div id="campanaProgress" class="admin-progress" hidden>
+              <div class="admin-progress-bar"><div class="admin-progress-fill" id="campanaFill"></div></div>
+              <div class="admin-progress-label" id="campanaProgressLabel">Procesando…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANEL 2: CARGAR ECICEP ── -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-icon">🧬</div>
+            <div>
+              <div class="admin-card-title">Cargar ECICEP</div>
+              <div class="admin-card-sub">Actualiza estratificación de riesgo APS (G0–G3) y recalcula score</div>
+            </div>
+          </div>
+          <div class="admin-card-body">
+            <div class="admin-upload-zone" id="ecicepZone" onclick="document.getElementById('ecicepFile').click()">
+              <div class="admin-upload-icon">📂</div>
+              <div class="admin-upload-label">Haz clic o arrastra el archivo ECICEP</div>
+              <div class="admin-upload-hint">Formato: .xlsx — columnas RUT, ECICEP (G0–G3), FECHA_NAC</div>
+              <input type="file" id="ecicepFile" accept=".xlsx" hidden onchange="onEcicepFileSelected(event)">
+            </div>
+            <div id="ecicepPreview" hidden>
+              <div class="admin-preview-header">
+                <span id="ecicepFilename" class="admin-filename"></span>
+                <button class="admin-btn-clear" onclick="clearEcicep()">✕ Limpiar</button>
+              </div>
+              <div id="ecicepStats" class="admin-stats-row"></div>
+              <div id="ecicepNoMatch" class="admin-warn-box" hidden></div>
+              <button class="admin-btn-import" id="ecicepImportBtn" onclick="importarEcicep()" disabled>
+                ⬆️ Actualizar ECICEP en Firebase
+              </button>
+            </div>
+            <div id="ecicepProgress" class="admin-progress" hidden>
+              <div class="admin-progress-bar"><div class="admin-progress-fill" id="ecicepFill"></div></div>
+              <div class="admin-progress-label" id="ecicepProgressLabel">Procesando…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANEL 3: EXPORTAR MINSAL CMBD ── -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-icon">📤</div>
+            <div>
+              <div class="admin-card-title">Exportar Minsal CMBD</div>
+              <div class="admin-card-sub">Genera archivo Excel con formato de carga ministerial</div>
+            </div>
+          </div>
+          <div class="admin-card-body">
+            <div class="admin-export-filters">
+              <div class="admin-export-row">
+                <label class="admin-export-label">Período gestiones</label>
+                <div class="admin-export-inputs">
+                  <input type="date" id="exportDesde" class="admin-input" placeholder="Desde">
+                  <span style="align-self:center;color:var(--text3)">→</span>
+                  <input type="date" id="exportHasta" class="admin-input" placeholder="Hasta">
+                </div>
+              </div>
+              <div class="admin-export-row">
+                <label class="admin-export-label">Estado caso</label>
+                <select id="exportEstado" class="admin-input">
+                  <option value="">Todos los estados</option>
+                  <option value="PENDIENTE">PENDIENTE</option>
+                  <option value="PROGRAMADO">PROGRAMADO</option>
+                  <option value="VENCIDO">VENCIDO</option>
+                  <option value="HOY">HOY</option>
+                </select>
+              </div>
+            </div>
+            <button class="admin-btn-export" onclick="exportarMinsal()">
+              ⬇️ Generar y descargar CMBD
+            </button>
+            <div id="exportStatus" class="admin-export-status" hidden></div>
+          </div>
+        </div>
+
+        <!-- ── PANEL 4: MIGRACIÓN HISTÓRICA ── -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-icon">🗂️</div>
+            <div>
+              <div class="admin-card-title">Migración histórica Gestor 3.0</div>
+              <div class="admin-card-sub">Importa el historial completo desde el Excel maestro</div>
+            </div>
+          </div>
+          <div class="admin-card-body">
+            <div class="admin-upload-zone" id="migracionZone" onclick="document.getElementById('migracionFile').click()">
+              <div class="admin-upload-icon">📂</div>
+              <div class="admin-upload-label">Haz clic o arrastra GESTOR_DE_CASOS_NAV_HPM_3.0.xlsx</div>
+              <div class="admin-upload-hint">Se leerán las hojas SEGUIMIENTO_RUT + GESTOR CASOS (5.495 filas)</div>
+              <input type="file" id="migracionFile" accept=".xlsx" hidden onchange="onMigracionFileSelected(event)">
+            </div>
+            <div id="migracionPreview" hidden>
+              <div class="admin-preview-header">
+                <span id="migracionFilename" class="admin-filename"></span>
+                <button class="admin-btn-clear" onclick="clearMigracion()">✕ Limpiar</button>
+              </div>
+              <div id="migracionStats" class="admin-stats-row"></div>
+              <div class="admin-warn-box" style="display:block;border-color:var(--orange);background:color-mix(in srgb, var(--orange) 8%, var(--surface))">
+                ⚠️ Esta operación importa miles de documentos a Firestore. No cerrar la ventana durante el proceso.
+              </div>
+              <button class="admin-btn-import" id="migracionImportBtn" onclick="importarMigracion()" disabled>
+                ⬆️ Iniciar migración histórica
+              </button>
+            </div>
+            <div id="migracionProgress" class="admin-progress" hidden>
+              <div class="admin-progress-bar"><div class="admin-progress-fill" id="migracionFill"></div></div>
+              <div class="admin-progress-label" id="migracionProgressLabel">Procesando…</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /view-admin -->
     </main>
   </div>
 </div>
@@ -1059,10 +1256,15 @@ function logout() {
 }
 
 // Persistencia de sesión: onAuthStateChanged
+const ADMIN_EMAIL = 'paulo.munoz.b@gmail.com';
+
 auth.onAuthStateChanged(user => {
   if (user) {
     currentAccount = user;
     _casosCached = null; // forzar recarga desde Firestore
+    // Mostrar botón Admin solo al coordinador
+    const adminBtn = document.getElementById('sidebarAdmin');
+    if (adminBtn) adminBtn.hidden = (user.email !== ADMIN_EMAIL);
     showApp(user.displayName || user.email);
   } else if (!_modoDemo) {
     currentAccount = null;
@@ -1810,7 +2012,7 @@ async function submitGestion(e) {
 
 // ══ VISTAS ════════════════════════════════════════════════════════
 function showView(v, btn) {
-  ['bandeja','casos','dashboard'].forEach(n => document.getElementById('view-'+n).hidden = (n !== v));
+  ['bandeja','casos','dashboard','admin'].forEach(n => document.getElementById('view-'+n).hidden = (n !== v));
   document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 }
@@ -1830,6 +2032,668 @@ function showToast(msg, type = '') {
   t.textContent = msg;
   t.className   = 'toast' + (type ? ' ' + type : '') + ' show';
   setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+
+// ══ MÓDULO ADMIN ═══════════════════════════════════════════════════
+// Requiere SheetJS (xlsx) cargado via CDN — se carga al acceder al panel Admin
+let _xlsxLoaded = false;
+let _campanaData = null, _ecicepData = null, _migracionData = null;
+
+function ensureXlsx() {
+  return new Promise((resolve, reject) => {
+    if (_xlsxLoaded || window.XLSX) { _xlsxLoaded = true; resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload  = () => { _xlsxLoaded = true; resolve(); };
+    s.onerror = () => reject(new Error('No se pudo cargar SheetJS'));
+    document.head.appendChild(s);
+  });
+}
+
+// ── Drag & Drop ────────────────────────────────────────────────────
+['campanaZone','ecicepZone','migracionZone'].forEach(zoneId => {
+  window.addEventListener('DOMContentLoaded', () => {
+    const zone = document.getElementById(zoneId);
+    if (!zone) return;
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      if (zoneId === 'campanaZone') procesarCampanaFile(file);
+      else if (zoneId === 'ecicepZone') procesarEcicepFile(file);
+      else if (zoneId === 'migracionZone') procesarMigracionFile(file);
+    });
+  });
+});
+
+// ── Helper: leer Excel → array de objetos ──────────────────────────
+async function readExcelSheet(file, sheetName) {
+  await ensureXlsx();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array', cellText: false, cellDates: true });
+        const sn = sheetName ? wb.SheetNames.find(n => n.trim().toUpperCase() === sheetName.trim().toUpperCase()) : wb.SheetNames[0];
+        if (!sn) { reject(new Error(`Hoja "${sheetName}" no encontrada. Hojas: ${wb.SheetNames.join(', ')}`)); return; }
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { defval: '' });
+        resolve({ rows, sheetNames: wb.SheetNames });
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = () => reject(new Error('Error leyendo archivo'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ── Normalizar RUT (sin puntos, con guión) ─────────────────────────
+function normRut(r) {
+  if (!r) return '';
+  return String(r).replace(/\./g,'').replace(/-/g,'-').trim().toUpperCase();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PANEL 1: CARGAR CAMPAÑA
+// ════════════════════════════════════════════════════════════════════
+async function onCampanaFileSelected(e) {
+  const file = e.target.files?.[0];
+  if (file) await procesarCampanaFile(file);
+}
+
+async function procesarCampanaFile(file) {
+  try {
+    await ensureXlsx();
+    // Intentar hoja "CONSOLIDADO CAMPAÑA" o la primera disponible
+    let result;
+    try { result = await readExcelSheet(file, 'CONSOLIDADO CAMPAÑA'); }
+    catch { result = await readExcelSheet(file, null); }
+
+    const rows = result.rows;
+    if (!rows.length) { showToast('El archivo está vacío','err'); return; }
+
+    // Detectar columna RUT_ESPECIALIDAD_SIGTE
+    const firstRow = rows[0];
+    const cols = Object.keys(firstRow);
+    const idCol = cols.find(c => c.trim().toUpperCase().includes('RUT_ESPECIALIDAD') || c.trim().toUpperCase() === 'ID');
+
+    _campanaData = { file, rows, cols, idCol };
+
+    // Cruzar con Firestore para detectar duplicados
+    const casos = await getCasos();
+    const existentes = new Set(casos.map(c => c.id));
+    const nuevos = idCol ? rows.filter(r => !existentes.has(String(r[idCol]).trim())) : rows;
+    const dupls  = idCol ? rows.filter(r =>  existentes.has(String(r[idCol]).trim())) : [];
+
+    _campanaData.nuevos = nuevos;
+    _campanaData.dupls  = dupls;
+
+    // Mostrar preview
+    document.getElementById('campanaFilename').textContent = file.name;
+    document.getElementById('campanaStats').innerHTML = `
+      <div class="admin-stat"><div class="admin-stat-val">${rows.length}</div><div class="admin-stat-lbl">Filas totales</div></div>
+      <div class="admin-stat"><div class="admin-stat-val" style="color:var(--green)">${nuevos.length}</div><div class="admin-stat-lbl">Casos nuevos</div></div>
+      <div class="admin-stat"><div class="admin-stat-val" style="color:var(--orange)">${dupls.length}</div><div class="admin-stat-lbl">Ya existen</div></div>
+    `;
+
+    const warnEl = document.getElementById('campanaDuplicados');
+    if (dupls.length) {
+      warnEl.hidden = false;
+      warnEl.textContent = `⚠️ ${dupls.length} fila(s) ya existen en Firebase (por ${idCol || 'ID'}). Solo se importarán los ${nuevos.length} nuevos.`;
+    } else {
+      warnEl.hidden = true;
+    }
+
+    document.getElementById('campanaPreview').hidden = false;
+    document.getElementById('campanaImportBtn').disabled = nuevos.length === 0;
+  } catch(err) {
+    showToast('Error al leer archivo: ' + err.message, 'err');
+    console.error(err);
+  }
+}
+
+function clearCampana() {
+  _campanaData = null;
+  document.getElementById('campanaPreview').hidden = true;
+  document.getElementById('campanaFile').value = '';
+  document.getElementById('campanaProgress').hidden = true;
+}
+
+async function importarCampana() {
+  if (!_campanaData?.nuevos?.length) return;
+  const { nuevos, idCol, cols } = _campanaData;
+
+  document.getElementById('campanaImportBtn').disabled = true;
+  document.getElementById('campanaProgress').hidden = false;
+
+  let ok = 0, errores = 0;
+  const total = nuevos.length;
+
+  // Batch de 500 (límite Firestore)
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < nuevos.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const slice = nuevos.slice(i, Math.min(i + BATCH_SIZE, nuevos.length));
+
+    for (const row of slice) {
+      const id = idCol ? String(row[idCol]).trim() : `CAMP_${Date.now()}_${ok}`;
+      if (!id) continue;
+
+      // Mapear campos clave del CONSOLIDADO CAMPAÑA
+      const casoDB = {
+        id,
+        nombre:      [row['NOMBRES']||'', row['PRIMER_APELLIDO']||'', row['SEGUNDO_APELLIDO']||''].filter(Boolean).join(' ').trim() || row['NOMBRES_COMPLETOS'] || id,
+        especialidad: row['ESPECIALIDAD'] || row['PRESTA_EST'] || '',
+        prioridad:   'P3',
+        estado:      'PENDIENTE',
+        proxima:     null,
+        perfil: {
+          fecha_nac:        row['FECHA_NAC'] || row['FECHA_NACIMIENTO'] || '',
+          acceso:           '',
+          red:              '',
+          dependencia:      '',
+          nivel_discapacidad: '',
+          ecicep:           row['ECICEP'] || '',
+          prais:            '',
+          institucionalizado: '',
+          cuidador:         '',
+          donde_vive:       '',
+          transporte:       '',
+          prevision:        '',
+          acompaniamiento:  ''
+        },
+        // Metadata campaña
+        _fuente: 'CAMPAÑA',
+        _importadoEn: new Date().toISOString(),
+        // Campos originales del consolidado
+        _f_entrada:   row['F_ENTRADA'] || row['FECHA_ENTRADA'] || '',
+        _unidad:      row['UNIDAD_GESTION'] || '',
+        _necesita_cita: row['¿NECESITA LA CITA?'] || row['NECESITA_CITA'] || ''
+      };
+
+      // Solo si el paciente respondió SÍ en campaña WhatsApp → pre-establecer como VINCULACION
+      const respuesta = String(row['RESPUESTA'] || row['RESULTADO'] || '').toUpperCase();
+      if (respuesta.includes('SI') || respuesta.includes('SÍ') || respuesta === '1') {
+        casoDB._campana_respuesta = 'SI';
+        casoDB.estado = 'PENDIENTE'; // Navigator confirma
+      }
+
+      const ref = db.collection(COL_CASOS).doc(id);
+      batch.set(ref, casoDB, { merge: false });
+    }
+
+    try {
+      await batch.commit();
+      ok += slice.length;
+    } catch(e) {
+      errores += slice.length;
+      console.error('Batch error:', e);
+    }
+
+    const pct = Math.round((i + slice.length) / total * 100);
+    document.getElementById('campanaFill').style.width = pct + '%';
+    document.getElementById('campanaProgressLabel').textContent = `${ok} de ${total} importados…`;
+    // Pequeña pausa para no saturar
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  _casosCached = null; // invalidar caché
+  document.getElementById('campanaProgressLabel').textContent =
+    `✅ Completado: ${ok} importados${errores ? `, ${errores} con error` : ''}`;
+  showToast(`Campaña importada: ${ok} casos`, 'ok');
+  clearCampana();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PANEL 2: CARGAR ECICEP
+// ════════════════════════════════════════════════════════════════════
+async function onEcicepFileSelected(e) {
+  const file = e.target.files?.[0];
+  if (file) await procesarEcicepFile(file);
+}
+
+async function procesarEcicepFile(file) {
+  try {
+    await ensureXlsx();
+    let result;
+    try { result = await readExcelSheet(file, 'ECICEP'); }
+    catch { result = await readExcelSheet(file, null); }
+
+    const rows = result.rows;
+    if (!rows.length) { showToast('El archivo está vacío','err'); return; }
+
+    // Detectar columna RUT
+    const cols = Object.keys(rows[0]);
+    const rutCol   = cols.find(c => /^rut$/i.test(c.trim())) || cols.find(c => c.toUpperCase().includes('RUT'));
+    const ecicepCol= cols.find(c => /ecicep|sicep|sisep/i.test(c.trim())) || cols.find(c => c.toUpperCase().includes('ESTRATIF'));
+    const fnacCol  = cols.find(c => /fecha_nac|nacimiento|f_nac/i.test(c.trim()));
+
+    if (!rutCol || !ecicepCol) {
+      showToast(`No se encontraron columnas RUT y/o ECICEP. Columnas: ${cols.slice(0,5).join(', ')}`, 'err');
+      return;
+    }
+
+    // Cruzar con casos actuales
+    const casos = await getCasos();
+    const byRut = {};
+    casos.forEach(c => {
+      // RUT_ESPECIALIDAD_SIGTE → extraer RUT (primera parte)
+      const rut = String(c.id || '').split('_')[0];
+      if (rut) { byRut[rut] = byRut[rut] || []; byRut[rut].push(c); }
+    });
+
+    let matches = 0, noMatch = 0;
+    const actualizaciones = [];
+    rows.forEach(row => {
+      const rut = normRut(row[rutCol]);
+      const ecicep = String(row[ecicepCol] || '').trim().toUpperCase();
+      const fnac   = fnacCol ? row[fnacCol] : '';
+      if (!rut) return;
+
+      const casosRut = byRut[rut] || byRut[rut.replace('-','').slice(0,-1)] || [];
+      if (casosRut.length) {
+        matches++;
+        casosRut.forEach(c => actualizaciones.push({ caso: c, ecicep, fnac }));
+      } else {
+        noMatch++;
+      }
+    });
+
+    _ecicepData = { file, rows, rutCol, ecicepCol, fnacCol, actualizaciones, matches, noMatch };
+
+    document.getElementById('ecicepFilename').textContent = file.name;
+    document.getElementById('ecicepStats').innerHTML = `
+      <div class="admin-stat"><div class="admin-stat-val">${rows.length}</div><div class="admin-stat-lbl">Filas ECICEP</div></div>
+      <div class="admin-stat"><div class="admin-stat-val" style="color:var(--green)">${matches}</div><div class="admin-stat-lbl">RUT con match</div></div>
+      <div class="admin-stat"><div class="admin-stat-val" style="color:var(--text3)">${noMatch}</div><div class="admin-stat-lbl">Sin match</div></div>
+    `;
+
+    const noMatchEl = document.getElementById('ecicepNoMatch');
+    if (noMatch > 0) {
+      noMatchEl.hidden = false;
+      noMatchEl.textContent = `ℹ️ ${noMatch} RUT del ECICEP no tienen caso en Firebase (pueden ser pacientes de otras unidades).`;
+    } else noMatchEl.hidden = true;
+
+    document.getElementById('ecicepPreview').hidden = false;
+    document.getElementById('ecicepImportBtn').disabled = actualizaciones.length === 0;
+  } catch(err) {
+    showToast('Error al leer ECICEP: ' + err.message, 'err');
+    console.error(err);
+  }
+}
+
+function clearEcicep() {
+  _ecicepData = null;
+  document.getElementById('ecicepPreview').hidden = true;
+  document.getElementById('ecicepFile').value = '';
+  document.getElementById('ecicepProgress').hidden = true;
+}
+
+async function importarEcicep() {
+  if (!_ecicepData?.actualizaciones?.length) return;
+  const { actualizaciones } = _ecicepData;
+
+  document.getElementById('ecicepImportBtn').disabled = true;
+  document.getElementById('ecicepProgress').hidden = false;
+
+  let ok = 0, errores = 0;
+  const total = actualizaciones.length;
+
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < actualizaciones.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const slice = actualizaciones.slice(i, Math.min(i + BATCH_SIZE, actualizaciones.length));
+
+    for (const { caso, ecicep, fnac } of slice) {
+      if (!caso._fsId) continue;
+      const update = { 'perfil.ecicep': ecicep };
+      if (fnac) update['perfil.fecha_nac'] = fnac;
+      // Recalcular frecuencia de llamado según ECICEP
+      // G3 → ALTA (30 días), G2 → MEDIA (90 días), G0/G1 → según score global
+      // El score completo se recalcula en el drawer; aquí solo actualizamos el campo
+      update['_ecicepActualizadoEn'] = new Date().toISOString();
+      const ref = db.collection(COL_CASOS).doc(caso._fsId);
+      batch.update(ref, update);
+    }
+
+    try {
+      await batch.commit();
+      ok += slice.length;
+    } catch(e) {
+      errores += slice.length;
+      console.error('ECICEP batch error:', e);
+    }
+
+    const pct = Math.round((i + slice.length) / total * 100);
+    document.getElementById('ecicepFill').style.width = pct + '%';
+    document.getElementById('ecicepProgressLabel').textContent = `${ok} de ${total} actualizados…`;
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  _casosCached = null;
+  document.getElementById('ecicepProgressLabel').textContent =
+    `✅ Completado: ${ok} casos actualizados${errores ? `, ${errores} con error` : ''}`;
+  showToast(`ECICEP actualizado: ${ok} casos`, 'ok');
+  clearEcicep();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PANEL 3: EXPORTAR MINSAL CMBD
+// ════════════════════════════════════════════════════════════════════
+async function exportarMinsal() {
+  const desde  = document.getElementById('exportDesde').value;
+  const hasta  = document.getElementById('exportHasta').value;
+  const estado = document.getElementById('exportEstado').value;
+  const statusEl = document.getElementById('exportStatus');
+
+  statusEl.hidden = false;
+  statusEl.textContent = 'Obteniendo gestiones desde Firebase…';
+
+  try {
+    await ensureXlsx();
+
+    // Consultar gestiones
+    let q = db.collection(COL_GESTIONES).orderBy('_ts', 'desc').limit(10000);
+    const snap = await q.get();
+    let gestiones = snap.docs.map(d => ({ _fsId: d.id, ...d.data() }));
+
+    // Filtrar por fecha
+    if (desde) gestiones = gestiones.filter(g => (g.Fecha_Gestion || g._ts || '') >= desde);
+    if (hasta) gestiones = gestiones.filter(g => (g.Fecha_Gestion || g._ts || '') <= hasta + 'T23:59:59');
+
+    // Obtener casos para cruzar
+    const casos = await getCasos();
+    const casoMap = {};
+    casos.forEach(c => { casoMap[c.id] = c; });
+
+    // Filtrar por estado del caso
+    if (estado) {
+      gestiones = gestiones.filter(g => {
+        const c = casoMap[g.Caso_ID];
+        return c && c.estado === estado;
+      });
+    }
+
+    if (!gestiones.length) {
+      statusEl.textContent = 'No se encontraron gestiones con los filtros aplicados.';
+      return;
+    }
+
+    // ── Columnas CMBD Minsal (formato estándar) ──────────────────
+    const filas = gestiones.map(g => {
+      const caso = casoMap[g.Caso_ID] || {};
+      const perfil = caso.perfil || {};
+      // RUT_ESPECIALIDAD_SIGTE → partes
+      const partes = String(g.Caso_ID || '').split('_');
+      const rutSigte = partes[0] || '';
+      const espSigte = partes[1] || caso.especialidad || '';
+      const nSigte   = partes[2] || '';
+
+      return {
+        'RUT_ESPECIALIDAD_SIGTE': g.Caso_ID || '',
+        'RUT':                    rutSigte,
+        'ESPECIALIDAD':           espSigte,
+        'N_SIGTE':                nSigte,
+        'FECHA_GESTION':          g.Fecha_Gestion || '',
+        'ACTIVIDAD_NAVEGADOR':    g.Actividad_Navegador || '',
+        'SCRIPT_DETALLE':         g.Script_Detalle || '',
+        'POST_ATENCION_COL81':    g.Post_Atencion_COL81 || '',
+        'CANAL':                  g.Canal || '',
+        'CLASIFICACION':          g.Clasificacion_Respuesta || '',
+        'ESTADO_SEGUIMIENTO':     g.Estado_Seguimiento || '',
+        'ACCION_HOY':             g.Accion_Hoy || '',
+        'TIPO_LLAMADO':           g.Tipo_Llamado || '',
+        'GESTION_ESTADO':         g.Gestion_Estado || '',
+        'EGRESAR_SIC':            g.Egresar_SIC || '',
+        'RECHAZA_ATENCION':       g.Rechaza_Atencion || '',
+        'FECHA_PROXIMO_CONTACTO': g.Fecha_Proximo || '',
+        'MOTIVO_NSP':             g.Motivo_NSP || '',
+        'URGENCIA_RECIENTE':      g.Urgencia_Reciente || '',
+        'HOSPITALIZADO':          g.Hospitalizado || '',
+        'SINTOMATOLOGIA':         g.Sintomatologia || '',
+        'OBSERVACION':            g.Observacion || '',
+        'SCORE_CLINICO':          g.Score_Clinico ?? '',
+        'SCORE_SOCIAL':           g.Score_Social ?? '',
+        'COMPLEJIDAD':            g.Complejidad || '',
+        'NAVEGADOR_ASIGNADO':     g.Navegador_Asignado || '',
+        'ECICEP':                 g.Perfil_ECICEP || perfil.ecicep || '',
+        'FECHA_NAC':              g.Perfil_Fecha_Nac || perfil.fecha_nac || '',
+        'DONDE_VIVE':             g.Perfil_Donde_Vive || perfil.donde_vive || '',
+        'ACCESO_HPM':             g.Perfil_Acceso_HPM || perfil.acceso || '',
+        'RED_APOYO':              g.Perfil_Red_Apoyo || perfil.red || '',
+        'DEPENDENCIA':            g.Perfil_Dependencia || perfil.dependencia || '',
+        'NIVEL_DISCAPACIDAD':     g.Perfil_Discapacidad || perfil.nivel_discapacidad || '',
+        'PRAIS':                  g.Perfil_PRAIS || perfil.prais || '',
+        'NOMBRES':                caso.nombre || ''
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(filas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'CMBD_GESTIONES');
+
+    // Auto-ancho columnas
+    const maxWidths = {};
+    filas.forEach(row => {
+      Object.entries(row).forEach(([k, v]) => {
+        maxWidths[k] = Math.max(maxWidths[k] || k.length, String(v).length);
+      });
+    });
+    ws['!cols'] = Object.keys(filas[0] || {}).map(k => ({ wch: Math.min(maxWidths[k] || 10, 40) }));
+
+    // Nombre de archivo con fecha
+    const hoy = new Date().toISOString().split('T')[0].replace(/-/g,'');
+    const filename = `CMBD_NAV_HPM_${hoy}${desde&&hasta ? '_'+desde.replace(/-/g,'')+'_'+hasta.replace(/-/g,'') : ''}.xlsx`;
+
+    XLSX.writeFile(wb, filename);
+    statusEl.textContent = `✅ ${filas.length} gestiones exportadas → ${filename}`;
+    showToast(`Exportado: ${filas.length} gestiones`, 'ok');
+  } catch(err) {
+    statusEl.textContent = '❌ Error: ' + err.message;
+    showToast('Error al exportar: ' + err.message, 'err');
+    console.error(err);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PANEL 4: MIGRACIÓN HISTÓRICA GESTOR 3.0
+// ════════════════════════════════════════════════════════════════════
+async function onMigracionFileSelected(e) {
+  const file = e.target.files?.[0];
+  if (file) await procesarMigracionFile(file);
+}
+
+async function procesarMigracionFile(file) {
+  try {
+    await ensureXlsx();
+    const statusEl = document.getElementById('migracionProgressLabel');
+    document.getElementById('migracionProgress').hidden = false;
+    statusEl.textContent = 'Leyendo hoja SEGUIMIENTO_RUT…';
+
+    // Leer hoja de casos activos
+    let seguimientoRows;
+    try { ({ rows: seguimientoRows } = await readExcelSheet(file, 'SEGUIMIENTO_RUT')); }
+    catch(e) { showToast('No se encontró hoja SEGUIMIENTO_RUT: ' + e.message, 'err'); return; }
+
+    statusEl.textContent = 'Leyendo hoja GESTOR CASOS…';
+    let gestorRows;
+    try { ({ rows: gestorRows } = await readExcelSheet(file, 'GESTOR CASOS')); }
+    catch(e) { showToast('No se encontró hoja "GESTOR CASOS": ' + e.message, 'err'); return; }
+
+    document.getElementById('migracionProgress').hidden = true;
+
+    _migracionData = { file, seguimientoRows, gestorRows };
+
+    document.getElementById('migracionFilename').textContent = file.name;
+    document.getElementById('migracionStats').innerHTML = `
+      <div class="admin-stat"><div class="admin-stat-val">${seguimientoRows.length}</div><div class="admin-stat-lbl">Casos SEGUIMIENTO_RUT</div></div>
+      <div class="admin-stat"><div class="admin-stat-val">${gestorRows.length}</div><div class="admin-stat-lbl">Gestiones GESTOR CASOS</div></div>
+    `;
+
+    document.getElementById('migracionPreview').hidden = false;
+    document.getElementById('migracionImportBtn').disabled = false;
+  } catch(err) {
+    showToast('Error al leer archivo: ' + err.message, 'err');
+    console.error(err);
+  }
+}
+
+function clearMigracion() {
+  _migracionData = null;
+  document.getElementById('migracionPreview').hidden = true;
+  document.getElementById('migracionFile').value = '';
+  document.getElementById('migracionProgress').hidden = true;
+}
+
+async function importarMigracion() {
+  if (!_migracionData) return;
+  const { seguimientoRows, gestorRows } = _migracionData;
+
+  document.getElementById('migracionImportBtn').disabled = true;
+  document.getElementById('migracionProgress').hidden = false;
+
+  const fillEl  = document.getElementById('migracionFill');
+  const labelEl = document.getElementById('migracionProgressLabel');
+
+  // ── FASE 1: Importar casos desde SEGUIMIENTO_RUT ──────────────
+  labelEl.textContent = 'Fase 1/2: Importando casos…';
+  let okCasos = 0, errCasos = 0;
+  const totalCasos = seguimientoRows.length;
+  const BATCH_SIZE = 400;
+
+  for (let i = 0; i < seguimientoRows.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const slice = seguimientoRows.slice(i, Math.min(i + BATCH_SIZE, seguimientoRows.length));
+
+    for (const row of slice) {
+      const id = String(row['RUT_ESPECIALIDAD_SIGTE'] || row['A'] || '').trim();
+      if (!id) continue;
+
+      const partes = id.split('_');
+
+      // Determinar estado bandeja desde columna ESTADO_CASO y GESTION
+      const estadoCaso = String(row['ESTADO_CASO'] || '').trim().toUpperCase();
+      const gestion    = String(row['GESTION'] || '').trim().toUpperCase();
+      const proxima    = row['PROXIMA_FECHA_CONSOLIDADA'] || row['ULTIMA_FECHA_GESTION'] || null;
+      const hoy = new Date().toISOString().split('T')[0];
+      let estadoBandeja = 'PENDIENTE';
+      if (gestion === 'RESUELTO' || estadoCaso.includes('ALTA') || estadoCaso.includes('FALLECIDO') ||
+          estadoCaso.includes('NO_PERTINENTE') || estadoCaso.includes('RECHAZA')) {
+        estadoBandeja = 'PROGRAMADO'; // Histórico cerrado
+      } else if (proxima) {
+        const fp = typeof proxima === 'string' ? proxima.split('T')[0] : new Date(proxima).toISOString().split('T')[0];
+        estadoBandeja = fp < hoy ? 'VENCIDO' : fp === hoy ? 'HOY' : 'PROGRAMADO';
+      }
+
+      const casoDB = {
+        id,
+        nombre:      String(row['RESUMEN_CASO'] || partes[0] || id).trim().slice(0,80),
+        especialidad: partes[1] || String(row['ESPECIALIDAD'] || '').trim(),
+        prioridad:   String(row['PRIORIDAD_CONTACTO'] || 'P3').trim(),
+        estado:      estadoBandeja,
+        proxima:     proxima ? (typeof proxima === 'string' ? proxima.split('T')[0] : new Date(proxima).toISOString().split('T')[0]) : null,
+        perfil: {
+          ecicep:          '',
+          fecha_nac:       '',
+          acceso:          '',
+          red:             '',
+          dependencia:     '',
+          nivel_discapacidad: '',
+          prais:           '',
+          institucionalizado: '',
+          cuidador:        '',
+          donde_vive:      '',
+          transporte:      '',
+          prevision:       '',
+          acompaniamiento: ''
+        },
+        // Campos Minsal de seguimiento
+        _estado_caso:     estadoCaso,
+        _gestion:         gestion,
+        _navegador:       String(row['NAVEGADOR_ASIGNADO'] || '').trim(),
+        _atendido:        row['ATENDIDO'] || '',
+        _alta:            row['ALTA'] || '',
+        _fuente:          'MIGRACION_V3',
+        _importadoEn:     new Date().toISOString()
+      };
+
+      const ref = db.collection(COL_CASOS).doc(id);
+      batch.set(ref, casoDB, { merge: true });
+    }
+
+    try {
+      await batch.commit();
+      okCasos += slice.length;
+    } catch(e) {
+      errCasos += slice.length;
+      console.error('Batch casos error:', e);
+    }
+
+    fillEl.style.width = Math.round(okCasos / totalCasos * 50) + '%';
+    labelEl.textContent = `Fase 1/2: ${okCasos} de ${totalCasos} casos importados…`;
+    await new Promise(r => setTimeout(r, 30));
+  }
+
+  // ── FASE 2: Importar gestiones desde GESTOR CASOS ─────────────
+  labelEl.textContent = 'Fase 2/2: Importando gestiones históricas…';
+  let okGs = 0, errGs = 0;
+  const totalGs = gestorRows.length;
+
+  // Columnas clave del GESTOR CASOS (por nombre exacto)
+  for (let i = 0; i < gestorRows.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const slice = gestorRows.slice(i, Math.min(i + BATCH_SIZE, gestorRows.length));
+
+    for (const row of slice) {
+      // La clave puede estar en CLAVE_BUSQUEDA o construirse de RUT+PRESTA_EST
+      const clave = String(row['CLAVE_BUSQUEDA'] || row['RUT_ESPECIALIDAD_SIGTE'] || '').trim();
+      const casoId = clave || '';
+
+      const payload = {
+        Caso_ID:           casoId,
+        Fecha_Gestion:     row['FECHA_GESTION'] || row['FECHA_CONTACTO_EFECTIVO'] || '',
+        Navegador_Asignado: row['NAVEGADOR/A'] || row['NAVEGADOR_DASH'] || '',
+        Actividad_Navegador: row['ACTIVIDAD'] || '',
+        Script_Detalle:    row['SCRIPT_DETALLE'] || '',
+        Canal:             row['CANAL'] || '',
+        Observacion:       row['OBSERVACIONES_GESTION'] || '',
+        Estado_Seguimiento: row['ESTADO'] || '',
+        Gestion_Estado:    row['ESTADO'] || '',
+        Motivo_NSP:        row['MOTIVO NSP'] || '',
+        Resultado_Contacto: row['RESULTADO_CONTACTO'] || '',
+        Perfil_ECICEP:     row['ECICEP'] || '',
+        Perfil_Fecha_Nac:  row['FECHA_NAC'] || '',
+        Score_Clinico:     row['SCORE_CLINICO'] || null,
+        Score_Social:      row['SCORE_SOCIAL'] || null,
+        _fuente:           'MIGRACION_V3',
+        _ts:               row['FECHA_GESTION'] || new Date().toISOString()
+      };
+
+      if (!payload.Actividad_Navegador && !payload.Script_Detalle) continue;
+
+      const ref = db.collection(COL_GESTIONES).doc();
+      batch.set(ref, payload);
+    }
+
+    try {
+      await batch.commit();
+      okGs += slice.length;
+    } catch(e) {
+      errGs += slice.length;
+      console.error('Batch gestiones error:', e);
+    }
+
+    fillEl.style.width = (50 + Math.round(okGs / totalGs * 50)) + '%';
+    labelEl.textContent = `Fase 2/2: ${okGs} de ${totalGs} gestiones importadas…`;
+    await new Promise(r => setTimeout(r, 30));
+  }
+
+  _casosCached = null;
+  fillEl.style.width = '100%';
+  labelEl.textContent = `✅ Migración completa — ${okCasos} casos + ${okGs} gestiones importadas`;
+  showToast(`Migración completada: ${okCasos} casos, ${okGs} gestiones`, 'ok');
+  clearMigracion();
 }
 </script>
 <!-- MODAL CONFIRMACIÓN POST-GUARDADO (Opción B) -->
