@@ -2550,6 +2550,26 @@ async function importarMigracion() {
   if (!_migracionData) return;
   const { seguimientoRows, gestorRows } = _migracionData;
 
+  // Construir mapa de nombres desde GESTOR CASOS (primera aparición por ID)
+  const nombreMap = {};
+  const perfilMap = {};
+  for (const g of gestorRows) {
+    const gid = String(g['UNIDAD_GESTION'] || g['RUT_ESPECIALIDAD_SIGTE'] || '').trim();
+    if (!gid) continue;
+    if (!nombreMap[gid]) {
+      const nom = [g['NOMBRES']||'', g['PRIMER_APELLIDO']||'', g['SEGUNDO_APELLIDO']||''].filter(Boolean).join(' ').trim();
+      if (nom) nombreMap[gid] = nom;
+    }
+    if (!perfilMap[gid]) {
+      perfilMap[gid] = {
+        fecha_nac: g['FECHA_NAC'] || g['FECHA NACIMIENTO'] || '',
+        fono1: String(g['FONO 1']||'').trim(),
+        fono2: String(g['FONO 2']||'').trim(),
+        diagnostico: String(g['SOSPECHA_DIAG']||'').trim(),
+      };
+    }
+  }
+
   document.getElementById('migracionImportBtn').disabled = true;
   document.getElementById('migracionProgress').hidden = false;
 
@@ -2588,14 +2608,17 @@ async function importarMigracion() {
 
       const casoDB = {
         id,
-        nombre:      String(row['RESUMEN_CASO'] || partes[0] || id).trim().slice(0,80),
+        nombre:      nombreMap[id] || String(row['RESUMEN_CASO'] || partes[0] || id).trim().slice(0,80),
         especialidad: partes[1] || String(row['ESPECIALIDAD'] || '').trim(),
         prioridad:   String(row['PRIORIDAD_CONTACTO'] || 'P3').trim(),
         estado:      estadoBandeja,
         proxima:     proxima ? (typeof proxima === 'string' ? proxima.split('T')[0] : new Date(proxima).toISOString().split('T')[0]) : null,
         perfil: {
           ecicep:          '',
-          fecha_nac:       '',
+          fecha_nac:       perfilMap[id]?.fecha_nac ? new Date(perfilMap[id].fecha_nac).toISOString().split('T')[0] : '',
+          fono1:           perfilMap[id]?.fono1 || '',
+          fono2:           perfilMap[id]?.fono2 || '',
+          diagnostico:     perfilMap[id]?.diagnostico || '',
           acceso:          '',
           red:             '',
           dependencia:     '',
@@ -2614,6 +2637,8 @@ async function importarMigracion() {
         _navegador:       String(row['NAVEGADOR_ASIGNADO'] || '').trim(),
         _atendido:        row['ATENDIDO'] || '',
         _alta:            row['ALTA'] || '',
+        _resumen_caso:    String(row['RESUMEN_CASO'] || '').trim(),
+        _accion_hoy:      String(row['ACCION_HOY'] || '').trim(),
         _fuente:          'MIGRACION_V3',
         _importadoEn:     new Date().toISOString()
       };
@@ -2646,28 +2671,37 @@ async function importarMigracion() {
     const slice = gestorRows.slice(i, Math.min(i + BATCH_SIZE, gestorRows.length));
 
     for (const row of slice) {
-      // La clave puede estar en CLAVE_BUSQUEDA o construirse de RUT+PRESTA_EST
-      const clave = String(row['CLAVE_BUSQUEDA'] || row['RUT_ESPECIALIDAD_SIGTE'] || '').trim();
-      const casoId = clave || '';
+      const casoId = String(row['UNIDAD_GESTION'] || row['RUT_ESPECIALIDAD_SIGTE'] || row['CLAVE_BUSQUEDA'] || '').trim();
 
+      const fgRaw = row['FECHA_GESTION'] || row['FECHA_CONTACTO_EFECTIVO'] || null;
+      const fgStr = fgRaw ? (fgRaw instanceof Date ? fgRaw.toISOString().split('T')[0] : String(fgRaw).split('T')[0]) : '';
       const payload = {
-        Caso_ID:           casoId,
-        Fecha_Gestion:     row['FECHA_GESTION'] || row['FECHA_CONTACTO_EFECTIVO'] || '',
-        Navegador_Asignado: row['NAVEGADOR/A'] || row['NAVEGADOR_DASH'] || '',
-        Actividad_Navegador: row['ACTIVIDAD'] || '',
-        Script_Detalle:    row['SCRIPT_DETALLE'] || '',
-        Canal:             row['CANAL'] || '',
-        Observacion:       row['OBSERVACIONES_GESTION'] || '',
-        Estado_Seguimiento: row['ESTADO'] || '',
-        Gestion_Estado:    row['ESTADO'] || '',
-        Motivo_NSP:        row['MOTIVO NSP'] || '',
-        Resultado_Contacto: row['RESULTADO_CONTACTO'] || '',
-        Perfil_ECICEP:     row['ECICEP'] || '',
-        Perfil_Fecha_Nac:  row['FECHA_NAC'] || '',
-        Score_Clinico:     row['SCORE_CLINICO'] || null,
-        Score_Social:      row['SCORE_SOCIAL'] || null,
-        _fuente:           'MIGRACION_V3',
-        _ts:               row['FECHA_GESTION'] || new Date().toISOString()
+        Caso_ID:             casoId,
+        Fecha_Gestion:       fgStr,
+        Navegador_Asignado:  String(row['NAVEGADOR/A'] || row['NAVEGADOR_DASH'] || '').trim(),
+        Actividad_Navegador: String(row['ACTIVIDAD'] || '').trim(),
+        Script_Detalle:      String(row['SCRIPT_DETALLE'] || '').trim(),
+        Canal:               String(row['CANAL'] || '').trim(),
+        Observacion:         String(row['OBSERVACIONES_GESTION'] || '').trim(),
+        Estado_Seguimiento:  String(row['ESTADO'] || '').trim(),
+        Motivo_NSP:          String(row['MOTIVO NSP'] || '').trim(),
+        Resultado_Contacto:  String(row['RESULTADO_CONTACTO'] || '').trim(),
+        Post_Atencion:       String(row['POST_ATENCION'] || '').trim(),
+        Perfil_ECICEP:       String(row['ECICEP'] || '').trim(),
+        Perfil_Fecha_Nac:    row['FECHA_NAC'] instanceof Date ? row['FECHA_NAC'].toISOString().split('T')[0] : String(row['FECHA_NAC']||'').trim(),
+        Score_Clinico:       row['SCORE_CLINICO'] || null,
+        Score_Social:        row['SCORE_SOCIAL'] || null,
+        // Datos de perfil adicionales
+        Donde_Vive:          String(row['DONDE_VIVE'] || '').trim(),
+        Red_Apoyo:           String(row['RED_APOYO'] || '').trim(),
+        Nivel_Dependencia:   String(row['NIVEL_DEPENDENCIA'] || '').trim(),
+        Urgencia_Reciente:   String(row['URGENCIA_RECIENTE'] || '').trim(),
+        Sintomatologia:      String(row['SINTOMATOLOGIA'] || '').trim(),
+        // Flags de revisión
+        _revision_nav:       String(row['REVISION NAV'] || '').trim(),
+        _revision_paulo:     String(row['REVISION PAULO'] || '').trim(),
+        _fuente:             'MIGRACION_V3',
+        _ts:                 fgStr || new Date().toISOString()
       };
 
       if (!payload.Actividad_Navegador && !payload.Script_Detalle) continue;
