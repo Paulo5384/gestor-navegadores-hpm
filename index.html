@@ -1022,27 +1022,21 @@ let perfilModificado = false;
 // ══ AUTH (Firebase / Google) ═════════════════════════════════════
 async function login() {
   const st = document.getElementById('loginStatus');
-  st.textContent = 'Redirigiendo a Google…';
+  st.textContent = 'Conectando con Google…';
   st.className = 'login-status';
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithRedirect(provider);
-    // La página se recarga; onAuthStateChanged + getRedirectResult manejan el retorno
+    await auth.signInWithPopup(provider);
+    // onAuthStateChanged se encarga de showApp()
   } catch(e) {
-    st.textContent = 'Error: ' + (e.message || e.code);
-    st.className = 'login-status err';
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+      st.textContent = 'Error: ' + (e.message || e.code);
+      st.className = 'login-status err';
+    } else {
+      st.textContent = '';
+    }
   }
 }
-
-// Capturar resultado del redirect al volver de Google
-auth.getRedirectResult().then(result => {
-  // onAuthStateChanged ya maneja la sesión; esto solo atrapa errores del redirect
-}).catch(e => {
-  if (e.code && e.code !== 'auth/no-current-user') {
-    const st = document.getElementById('loginStatus');
-    if (st) { st.textContent = 'Error al volver de Google: ' + (e.message || e.code); st.className = 'login-status err'; }
-  }
-});
 
 function loginDemo() {
   _modoDemo = true;
