@@ -328,7 +328,7 @@ textarea.field-control{resize:vertical;min-height:72px;}
 <!-- APP -->
 <div id="app" hidden>
   <div class="topbar">
-    <div class="topbar-logo"><span class="topbar-logo-dot"></span> NAV Sistema <span style="font-size:10px;font-weight:400;opacity:.55;margin-left:4px;">v16</span></div>
+    <div class="topbar-logo"><span class="topbar-logo-dot"></span> NAV Sistema <span style="font-size:10px;font-weight:400;opacity:.55;margin-left:4px;">v16.4</span></div>
     <div id="testBanner" hidden style="background:#c64600;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:.5px;">⚠️ MODO PRUEBA — datos aislados</div>
     <span class="topbar-esp" id="topbarEsp">Dermatología</span>
     <span class="topbar-badge" id="topbarBadge">Firebase</span>
@@ -1219,6 +1219,16 @@ let activeFilters = new Set(['VENCIDO','HOY','PENDIENTE','PROGRAMADO']);
 let perfilModificado = false;
 
 // ══ AUTH (Firebase / Google) ═════════════════════════════════════
+// Al cargar: verificar si venimos de un redirect (Edge/Safari sin popup)
+auth.getRedirectResult().then(result => {
+  // Si hay usuario en redirect result, onAuthStateChanged lo toma solo
+}).catch(e => {
+  if (e.code && e.code !== 'auth/no-current-user') {
+    const st = document.getElementById('loginStatus');
+    if (st) { st.textContent = 'Error al retornar: ' + (e.message || e.code); st.className = 'login-status err'; }
+  }
+});
+
 async function login() {
   const st = document.getElementById('loginStatus');
   st.textContent = 'Conectando con Google…';
@@ -1228,11 +1238,26 @@ async function login() {
     await auth.signInWithPopup(provider);
     // onAuthStateChanged se encarga de showApp()
   } catch(e) {
-    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+    // Popup bloqueado (Edge, Safari) → intentar redirect
+    const popupErrors = ['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'];
+    if (popupErrors.includes(e.code)) {
+      if (e.code === 'auth/popup-blocked') {
+        st.textContent = 'Popup bloqueado — redirigiendo a Google…';
+        st.className = 'login-status';
+        try {
+          const provider2 = new firebase.auth.GoogleAuthProvider();
+          await auth.signInWithRedirect(provider2);
+          // El navegador redirige; la página se recarga al volver
+        } catch(e2) {
+          st.textContent = 'Error: ' + (e2.message || e2.code);
+          st.className = 'login-status err';
+        }
+      } else {
+        st.textContent = '';
+      }
+    } else {
       st.textContent = 'Error: ' + (e.message || e.code);
       st.className = 'login-status err';
-    } else {
-      st.textContent = '';
     }
   }
 }
