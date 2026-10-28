@@ -1,0 +1,18 @@
+# Deploys manuales únicamente.
+# Para publicar a Netlify, agrega [deploy] al mensaje del commit.
+# Ej: git commit -m "feat: nueva versión del mockup [deploy]"
+
+[build]
+  # El script revisa si el commit message contiene [deploy]
+  # Si no lo contiene, aborta el build (exit 1 = skip build en Netlify)
+  command = "echo 'Build OK'"
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
+
+[context.production]
+  command = "bash -c 'if git log -1 --pretty=%B | grep -q \"\\[deploy\\]\"; then echo Deploy autorizado; else echo Sin [deploy] — abortando build; exit 1; fi && echo Build OK'"
